@@ -1,0 +1,30 @@
+{
+  "name": "gvksportss",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "node server.js",
+    "build": "npm run build --workspace=@gvk/web",
+    "start": "NODE_ENV=production node server.js",
+    "lint": "node --check server.js apps/api/src/app.js apps/api/src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "lucide-react": "^0.468.0",
+    "motion": "^13.4.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.9.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0",
+    "@vitejs/plugin-react": "^5.0.0"
+  }
+}

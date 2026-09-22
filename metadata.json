@@ -1,0 +1,6 @@
+{
+  "name": "GVK Sportss",
+  "description": "GVK Sportss — badminton and chess coaching, tournaments and community sports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

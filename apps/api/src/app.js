@@ -11,18 +11,24 @@ export const app = express();
 app.disable('x-powered-by');
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        imgSrc: ["'self'", 'https:', 'data:'],
-        scriptSrc: ["'self'"],
-        upgradeInsecureRequests: config.production ? [] : null,
-      },
-    },
+    frameguard: false,
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
   }),
 );
 app.use('/api', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.headers.origin !== config.origin)
+  const origin = req.headers.origin;
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  let isAllowed = !origin || origin === config.origin;
+  if (!isAllowed && origin && host) {
+    try {
+      isAllowed = new URL(origin).host === host;
+    } catch {}
+  }
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !isAllowed)
     return res.status(403).json({ error: 'Request origin is not allowed.' });
   next();
 });
@@ -35,8 +41,10 @@ app.use('/api/member', member);
 app.use('/api/admin', admin);
 app.use('/api/enquiries', enquiries);
 app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found' }));
-app.use(express.static(path.join(root, 'apps/web/dist')));
-app.get('/{*path}', (req, res) => res.sendFile(path.join(root, 'apps/web/dist/index.html')));
+if (config.production) {
+  app.use(express.static(path.join(root, 'apps/web/dist')));
+  app.get('/{*path}', (req, res) => res.sendFile(path.join(root, 'apps/web/dist/index.html')));
+}
 app.use((err, req, res, next) => {
   if (!err.status) console.error(err);
   res

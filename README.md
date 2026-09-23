@@ -78,6 +78,8 @@ npm run build
 
 To serve the built app locally from Node, set `APP_ORIGIN=http://localhost:3000` in `.env`, then run `npm start` and open that address. The Node server serves the built React app and API together.
 
+For GoDaddy Node.js hosting, use `npm run build` as the build command and `npm start` as the startup command. Set `NODE_ENV=production`, set `APP_ORIGIN` to the hosted HTTPS URL, and do not start Vite separately. The production Node process serves the built frontend and API on the hosting provider's `PORT` value.
+
 For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, choose a persistent `DATABASE_PATH`, build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. Do not use an ephemeral filesystem for the database. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
 
 ## Security implemented

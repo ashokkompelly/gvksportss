@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { Eye, EyeOff } from 'lucide-react';
 export function useData(path) {
   const [data, setData] = useState(null),
     [error, setError] = useState('');
@@ -49,10 +50,25 @@ export function Empty({ children }) {
   return <div className="empty">{children}</div>;
 }
 export function Field({ label, ...props }) {
+  const [visible, setVisible] = useState(false);
+  const password = props.type === 'password';
   return (
     <label className="field">
       <span>{label}</span>
-      <input {...props} />
+      <span className={password ? 'password-input' : undefined}>
+        <input {...props} type={password && visible ? 'text' : props.type} />
+        {password && (
+          <button
+            type="button"
+            className="password-toggle"
+            aria-label={visible ? 'Hide password' : 'Show password'}
+            title={visible ? 'Hide password' : 'Show password'}
+            onClick={() => setVisible((value) => !value)}
+          >
+            {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        )}
+      </span>
     </label>
   );
 }

@@ -1,50 +1,67 @@
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Heading,
   useData,
   State,
-  Empty,
-  Notice,
-  Action,
 } from '../components/ui';
-import { api, date } from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
 import {
   Sparkles,
-  Zap,
-  Video,
   Award,
-  ShieldCheck,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  MapPin,
   Flame,
-  Layers,
-  Activity,
 } from 'lucide-react';
 
+const disciplineShowcases = {
+  Badminton: {
+    eyebrow: 'HIGH-PERFORMANCE BADMINTON STANDARDS',
+    title: 'Professional Court Training',
+    description: 'Engineered for competitive players with Olympic-specification infrastructure and sports biomechanics.',
+    icon: Flame,
+    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=85',
+    benefits: ['Olympic-grade BWF courts', 'Video and speed analysis', 'Footwork, fitness, and match training'],
+  },
+  Chess: {
+    eyebrow: 'CHESS COACHING & CHESSLANG PLATFORM',
+    title: 'Chess Coaching Featuring the Chesslang Platform',
+    description: 'Integrated digital chess mentoring combining FIDE-certified master trainers with interactive boards, tactical drills, and personalized study.',
+    icon: Award,
+    image: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=1200&q=85',
+    benefits: ['Live Chesslang digital boards', 'Weekly puzzles and game review', 'Blitz, rapid, and tournament practice'],
+  },
+};
+
+function DisciplineShowcase({ sport }) {
+  const showcase = disciplineShowcases[sport];
+  if (!showcase) return null;
+  const SectionIcon = showcase.icon;
+  return (
+    <section className="discipline-showcase compact-showcase">
+      <div className="compact-showcase-image" style={{ backgroundImage: `url(${showcase.image})` }} aria-hidden="true" />
+      <div className="compact-showcase-content">
+        <span className="eyebrow"><SectionIcon size={14} /> {showcase.eyebrow}</span>
+        <h2>{showcase.title}</h2>
+        <p>{showcase.description}</p>
+        <ul className="benefit-list">
+          {showcase.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
+        </ul>
+        <Link className="button outline small" to={`/contact?interest=${sport}`}>Ask about {sport}</Link>
+      </div>
+    </section>
+  );
+}
+
+const programImages = {
+  Badminton: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=85',
+  Chess: 'https://images.unsplash.com/photo-1529699211952-734e80c4d42b?auto=format&fit=crop&w=1200&q=85',
+};
 export default function Coaching() {
   const [params, setParams] = useSearchParams();
   const sport = params.get('sport') || 'All';
   const programs = useData('/catalog/programs');
-  const slots = useData('/catalog/slots');
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [message, setMessage] = useState('');
-  const [selectedTier, setSelectedTier] = useState(null);
-
-  async function book(id) {
-    if (!user) return navigate('/login');
-    try {
-      await api('/member/bookings', { method: 'POST', body: { id } });
-      setMessage('Your place is booked successfully! View your session in My GVK.');
-      slots.reload();
-    } catch (e) {
-      setMessage(e.message);
-    }
-  }
+  const visiblePrograms = sport === 'All'
+    ? ['Badminton', 'Chess'].flatMap((category) =>
+        programs.data?.filter((program) => program.sport === category).slice(0, 2) || [],
+      )
+    : programs.data?.filter((program) => program.sport === sport).slice(0, 2) || [];
 
   return (
     <section className="section">
@@ -70,133 +87,12 @@ export default function Coaching() {
         ))}
       </div>
 
-      {/* BADMINTON HIGH-STANDARD ELITE FEATURES (shown when All or Badminton selected) */}
-      {(sport === 'All' || sport === 'Badminton') && (
-        <div style={{ marginBottom: '48px' }}>
-          <div className="section-title">
-            <div>
-              <span className="eyebrow">
-                <Flame size={14} /> HIGH-PERFORMANCE BADMINTON STANDARDS
-              </span>
-              <h2>Professional Court Training</h2>
-            </div>
-            <p>
-              Engineered for competitive players with Olympic-specification infrastructure and
-              sports biomechanics.
-            </p>
-          </div>
-
-          <div className="feature-badge-grid">
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <ShieldCheck size={24} />
-              </div>
-              <h4>8 Olympic-Grade BWF Courts</h4>
-              <p>
-                Multi-layer shock absorbing synthetic mat courts engineered for optimum grip, joint
-                cushioning, and zero-glare 800-lux tournament LED illumination.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Video size={24} />
-              </div>
-              <h4>Biomechanical Video Smash Analysis</h4>
-              <p>
-                High-speed 360-degree cameras capturing stroke angles, arm speed, and jump smash
-                mechanics with frame-by-frame coach commentary.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Zap size={24} />
-              </div>
-              <h4>Smash Speed Radar Tracking</h4>
-              <p>
-                Precision radar measuring racket head velocity and shuttlecock exit speeds up to
-                400+ km/h to quantify stroke power improvement over time.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Activity size={24} />
-              </div>
-              <h4>Multi-Shuttle Footwork Drills</h4>
-              <p>
-                Algorithmic 6-corner agility feeding, cognitive reaction timing lights, and endurance
-                intervals tailored for high-tempo rally endurance.
-              </p>
-            </div>
-          </div>
+      {sport === 'All' ? (
+        <div className="discipline-showcase-grid">
+          <DisciplineShowcase sport="Badminton" />
+          <DisciplineShowcase sport="Chess" />
         </div>
-      )}
-
-      {/* CHESS COACHING WITH CHESSLANG PLATFORM HIGHLIGHT (shown when All or Chess selected) */}
-      {(sport === 'All' || sport === 'Chess') && (
-        <div style={{ marginBottom: '48px' }}>
-          <div className="section-title">
-            <div>
-              <span className="eyebrow">
-                <Award size={14} /> CHESS COACHING & CHESSLANG PLATFORM
-              </span>
-              <h2>Chess Coaching Featuring the Chesslang Platform</h2>
-            </div>
-            <p>
-              Integrated digital chess mentoring combining FIDE-certified master trainers with the
-              Chesslang coaching platform for interactive boards, tactical drills, and personalized study.
-            </p>
-          </div>
-
-          <div className="feature-badge-grid">
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Sparkles size={24} />
-              </div>
-              <h4>Interactive Chesslang Digital Boards</h4>
-              <p>
-                Live virtual boards with engine evaluations, visual annotations, and real-time mentor
-                analysis during classroom and one-on-one sessions.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <CheckCircle2 size={24} />
-              </div>
-              <h4>Personalized Puzzle Homework</h4>
-              <p>
-                Curated tactical homework drills assigned weekly on the platform by coaches based on each
-                student's game weaknesses and rating progression.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Layers size={24} />
-              </div>
-              <h4>Comprehensive Game Archives</h4>
-              <p>
-                Every practice match is recorded in the platform database for deep post-game
-                debriefs, blunder detection, and opening repertoire preparation.
-              </p>
-            </div>
-
-            <div className="feature-box">
-              <div className="feature-box-icon">
-                <Award size={24} />
-              </div>
-              <h4>Weekly Academy Blitz & Rapid Arenas</h4>
-              <p>
-                Compete against academy peers in regular Swiss and arena tournaments with official pairings
-                and automated rating progression.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      ) : <DisciplineShowcase sport={sport} />}
 
       {/* Program Tiers from Database */}
       <div className="section-title spaced">
@@ -211,85 +107,36 @@ export default function Coaching() {
 
       <State {...programs}>
         <div className="grid three">
-          {programs.data
-            ?.filter((p) => sport === 'All' || p.sport === sport)
-            .map((p) => (
-              <article key={p.id} className="card">
-                <span className="badge">
-                  {p.sport} / {p.level}
-                </span>
-                <h3>{p.title}</h3>
-                <p>{p.description}</p>
-                <div style={{ marginTop: '16px', fontSize: '13px', color: 'var(--gold)' }}>
-                  Mode: {p.mode}
-                </div>
-                <div className="card-bottom">
-                  <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Batches: Morning & Evening</span>
-                  <Link
-                    to={`/contact?interest=${encodeURIComponent(p.title)}`}
-                    className="button small outline"
-                  >
-                    Enquire Batch
-                  </Link>
-                </div>
-              </article>
-            ))}
+          {visiblePrograms.map((p) => (
+            <article key={p.id} className="card">
+              <div
+                className="program-media"
+                style={{ backgroundImage: `url(${p.image || programImages[p.sport]})` }}
+                aria-hidden="true"
+              />
+              <span className="badge">
+                {p.sport} / {p.level}
+              </span>
+              <h3>{p.title}</h3>
+              <p>{p.description}</p>
+              <div style={{ marginTop: '16px', fontSize: '13px', color: 'var(--gold)' }}>
+                Mode: {p.mode}
+              </div>
+              <div className="card-bottom">
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Batches: Morning & Evening</span>
+                <Link
+                  to={`/contact?interest=${encodeURIComponent(p.title)}`}
+                  className="button small outline"
+                >
+                  Enquire Batch
+                </Link>
+              </div>
+            </article>
+          ))}
         </div>
       </State>
 
-      {/* Bookable Sessions Calendar */}
-      <div className="section-title spaced">
-        <div>
-          <span className="eyebrow">UPCOMING SESSIONS</span>
-          <h2>Book an Open Coaching Slot</h2>
-        </div>
-        <Link to="/account" className="light-link">My Active Bookings →</Link>
-      </div>
-
-      <Notice message={message} />
-
-      <State {...slots}>
-        {!slots.data?.filter(
-          (s) => (sport === 'All' || s.sport === sport) && new Date(s.start) > new Date(),
-        ).length && (
-          <Empty>
-            Current batch slots are being finalized for the upcoming week.
-            <br />
-            <Link to="/contact">Speak with our academy manager to reserve a spot →</Link>
-          </Empty>
-        )}
-
-        <div className="grid two">
-          {slots.data
-            ?.filter(
-              (s) => (sport === 'All' || s.sport === sport) && new Date(s.start) > new Date(),
-            )
-            .map((s) => (
-              <article className="card" key={s.id}>
-                <span className="badge">
-                  {s.sport}
-                  {s.membersOnly ? ' · Members only' : ''}
-                </span>
-                <h3>{s.title}</h3>
-                <p style={{ margin: '8px 0 14px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#fff' }}>
-                    <Calendar size={14} color="var(--gold)" /> {date(s.start)}
-                  </span>
-                  <br />
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--muted)', marginTop: '4px' }}>
-                    <MapPin size={14} color="var(--gold)" /> {s.location}
-                  </span>
-                </p>
-                <div className="card-bottom">
-                  <span>{s.remaining} place{s.remaining === 1 ? '' : 's'} available</span>
-                  <Action disabled={s.remaining < 1} onClick={() => book(s.id)}>
-                    {s.remaining < 1 ? 'Batch Full' : 'Book Session'}
-                  </Action>
-                </div>
-              </article>
-            ))}
-        </div>
-      </State>
+      {/* Session booking remains available through My GVK while this section is being refreshed. */}
     </section>
   );
 }

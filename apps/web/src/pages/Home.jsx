@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
   MoveRight,
@@ -10,48 +11,82 @@ import {
 import { useData, State } from '../components/ui';
 import { TrainingAssessmentWidget } from '../components/AnimatedComponents';
 
+const iconMap = { school: School, users: Users, building: Building2 };
+
 export default function Home() {
   const { data, error } = useData('/catalog/pages');
+  const events = useData('/catalog/events');
   const home = data?.find((p) => p.slug === 'home');
+  const content = home?.config;
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [eventSlide, setEventSlide] = useState(0);
+  const upcomingEvents = events.data?.filter((event) => new Date(event.start) > new Date()) || [];
+  const featuredEvent = upcomingEvents[eventSlide];
+  const heroSlides = content ? [
+    { image: content.heroImage, label: content.heroLabel, standard: content.heroStandard },
+    ...content.sports.filter((sport) => sport.image).map((sport) => ({ image: sport.image, label: sport.title, standard: 'Train with purpose. Compete with confidence.' })),
+    ...(featuredEvent?.image ? [{ image: featuredEvent.image, label: 'ARENA EVENTS', standard: featuredEvent.title }] : []),
+  ] : [];
+
+  useEffect(() => {
+    if (heroSlides.length < 2) return undefined;
+    const timer = window.setInterval(() => setHeroSlide((current) => (current + 1) % heroSlides.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (upcomingEvents.length < 2) return undefined;
+    const timer = window.setInterval(() => setEventSlide((current) => (current + 1) % upcomingEvents.length), 6500);
+    return () => window.clearInterval(timer);
+  }, [upcomingEvents.length]);
+
+  if (!content) return <State data={data} error={error} />;
+  const primaryAction = content.primaryAction;
+  const secondaryAction = content.secondaryAction;
+  const communityAction = content.communityAction;
 
   return (
     <>
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow">
-            <Sparkles size={14} /> CHESS + BADMINTON • HYDERABAD
+            <Sparkles size={14} /> {content.eyebrow}
           </span>
           <State data={data} error={error}>
             <h1>{home?.title || 'Play. Learn. Grow.'}</h1>
-            <p>
-              Elevate your game with world-class coaching, Olympic-grade badminton courts, and
-              interactive chess coaching powered by the Chesslang platform.
-            </p>
+            <p>{content.heroDescription}</p>
           </State>
           <div className="actions">
-            <Link className="button gold" to="/coaching">
-              Explore Coaching Batches <ArrowUpRight size={18} />
+            <Link className="button gold" to={primaryAction.href}>
+              {primaryAction.label} <ArrowUpRight size={18} />
             </Link>
-            <Link className="button outline" to="/events">
-              Tournaments & Events <MoveRight size={18} />
+            <Link className="button outline" to={secondaryAction.href}>
+              {secondaryAction.label} <MoveRight size={18} />
             </Link>
           </div>
           <div className="hero-foot">
-            <span>01 / 8 BWF Synthetic Courts</span>
-            <span>02 / Chesslang Platform Coaching</span>
-            <span>03 / FIDE & BWF Certified Coaches</span>
+            {content.heroFoot.map((item) => <span key={item}>{item}</span>)}
           </div>
         </div>
         <div className="hero-art">
-          <img
-            src="/logo.png"
-            alt="GVK Sportss Gold and Black Emblem"
-          />
-          <div className="art-label">
-            <span>THE GVK STANDARD</span>
-            <strong>
-              Discipline. Technique. Mastery.
-            </strong>
+          <div className="hero-slider" aria-label="GVK sports highlights">
+            {heroSlides.map((slide, index) => (
+              <img
+                key={`${slide.image}-${index}`}
+                className={index === heroSlide ? 'active' : ''}
+                src={slide.image}
+                alt={index === 0 ? content.heroImageAlt : slide.label}
+              />
+            ))}
+            <div className="hero-slider-caption">
+              <span>{heroSlides[heroSlide]?.label}</span>
+              <strong>{heroSlides[heroSlide]?.standard}</strong>
+            </div>
+            <div className="hero-slider-dots">
+              {heroSlides.map((slide, index) => (
+                <button key={`${slide.label}-dot`} className={index === heroSlide ? 'active' : ''} onClick={() => setHeroSlide(index)} aria-label={`Show highlight ${index + 1}`} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -59,77 +94,60 @@ export default function Home() {
       {/* Quick Metrics Bar */}
       <section className="section" style={{ paddingTop: '10px', paddingBottom: '30px' }}>
         <div className="metrics-bar">
-          <div className="metric-box">
-            <div className="metric-number">8 Courts</div>
-            <div className="metric-label">Olympic-Grade BWF Mats</div>
-          </div>
-          <div className="metric-box">
-            <div className="metric-number">Chesslang</div>
-            <div className="metric-label">Platform Coaching</div>
-          </div>
-          <div className="metric-box">
-            <div className="metric-number">15+ Coaches</div>
-            <div className="metric-label">BWF & FIDE Certified Mentors</div>
-          </div>
-          <div className="metric-box">
-            <div className="metric-number">500+</div>
-            <div className="metric-label">Active Academy Athletes</div>
-          </div>
+          {content.metrics.map((metric) => (
+            <div className="metric-box" key={metric.label}>
+              <div className="metric-number">{metric.value}</div>
+              <div className="metric-label">{metric.label}</div>
+            </div>
+          ))}
         </div>
       </section>
+
+      {featuredEvent && (
+        <section className="section home-event-section">
+          <div className="home-event-feature">
+            <div className="home-event-media" style={{ backgroundImage: `url(${featuredEvent.image})` }}>
+              <span className="badge">Next on the arena calendar</span>
+            </div>
+            <div className="home-event-copy">
+              <span className="eyebrow">UPCOMING EVENT</span>
+              <h2>{featuredEvent.title}</h2>
+              <p>{featuredEvent.description}</p>
+              <div className="event-meta">{featuredEvent.sport} · {new Date(featuredEvent.start).toLocaleDateString('en-IN', { dateStyle: 'medium' })} · {featuredEvent.location}</div>
+              <Link className="button gold" to="/events">See all events <ArrowUpRight size={17} /></Link>
+              {upcomingEvents.length > 1 && <div className="event-slider-controls">
+                <button type="button" onClick={() => setEventSlide((current) => (current - 1 + upcomingEvents.length) % upcomingEvents.length)} aria-label="Previous event">←</button>
+                <span>{eventSlide + 1} / {upcomingEvents.length}</span>
+                <button type="button" onClick={() => setEventSlide((current) => (current + 1) % upcomingEvents.length)} aria-label="Next event">→</button>
+              </div>}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Two Sports Cards */}
       <section className="section">
         <div className="section-title">
           <div>
-            <span className="eyebrow">CHOOSE YOUR DISCIPLINE</span>
-            <h2>
-              Precision on court.
-              <br />Strategy on board.
-            </h2>
+            <span className="eyebrow">{content.sportsEyebrow}</span>
+            <h2>{content.sportsTitle.split('\n').map((line) => <span key={line}>{line}<br /></span>)}</h2>
           </div>
-          <p>
-            Whether smashing at 350+ km/h or outmaneuvering an opponent in a Sicilian defense, GVK
-            provides championship-level mentoring.
-          </p>
+          <p>{content.sportsDescription}</p>
         </div>
 
         <div className="sport-grid">
-          {/* Badminton Card */}
-          <Link className="sport-card" to="/coaching?sport=Badminton">
-            <span className="sport-number">01 / BADMINTON HIGH-PERFORMANCE</span>
-            <h3>Badminton Academy</h3>
-            <p>
-              BWF Level 2 certified coaching, slow-motion biomechanics video smash analysis,
-              radar speed tracking, and Olympic-spec synthetic shock-absorbing courts.
-            </p>
-            <div style={{ marginTop: '20px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span className="badge">BWF Certified</span>
-              <span className="badge">Video Analysis</span>
-              <span className="badge">Smash Radar</span>
-            </div>
-            <span className="round-arrow">
-              <ArrowUpRight />
-            </span>
-          </Link>
-
-          {/* Chess Card with Chesslang Integrated */}
-          <Link className="sport-card" to="/coaching?sport=Chess">
-            <span className="sport-number">02 / CHESS COACHING</span>
-            <h3>Chess Masterclass</h3>
-            <p>
-              Integrated with the <strong>Chesslang platform</strong> for digital coaching. FIDE-rated
-              trainers, interactive live board sessions, tactical puzzle homework, and regular game debriefs.
-            </p>
-            <div style={{ marginTop: '20px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span className="badge">Chesslang Platform Coaching</span>
-              <span className="badge">FIDE Mentors</span>
-              <span className="badge">Interactive Boards</span>
-            </div>
-            <span className="round-arrow">
-              <ArrowUpRight />
-            </span>
-          </Link>
+          {content.sports.map((sport) => (
+            <Link className="sport-card" to={sport.href} key={sport.title}>
+              {sport.image && <div className="sport-card-media" style={{ backgroundImage: `url(${sport.image})` }} aria-hidden="true" />}
+              <span className="sport-number">{sport.number}</span>
+              <h3>{sport.title}</h3>
+              <p>{sport.description}</p>
+              <div style={{ marginTop: '20px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {sport.badges.map((badge) => <span className="badge" key={badge}>{badge}</span>)}
+              </div>
+              <span className="round-arrow"><ArrowUpRight /></span>
+            </Link>
+          ))}
         </div>
 
         {/* Interactive Animated Assessment Widget */}
@@ -140,40 +158,25 @@ export default function Home() {
       <section className="community section">
         <div className="section-title">
           <div>
-            <span className="eyebrow">SPORTS FOR EVERY COMMUNITY</span>
-            <h2>Bring championship energy into play.</h2>
+            <span className="eyebrow">{content.communityEyebrow}</span>
+            <h2>{content.communityTitle}</h2>
           </div>
-          <Link to="/contact" className="button outline">
-            Plan an Experience <ArrowUpRight size={18} />
+          <Link to={communityAction.href} className="button outline">
+            {communityAction.label} <ArrowUpRight size={18} />
           </Link>
         </div>
         <div className="grid three">
-          {[
-            [
-              School,
-              'Schools & Academies',
-              'Curriculum-integrated badminton and chess coaching, inter-school tournaments, and youth scout camps.',
-            ],
-            [
-              Users,
-              'Gated Communities',
-              'Resident leagues, weekend clinics, certified coaches on-site, and friendly multi-age championships.',
-            ],
-            [
-              Building2,
-              'Corporate Leagues',
-              'Executive stress-relief wellness, corporate badminton cups, and workplace chess tournaments.',
-            ],
-          ].map(([Icon, title, text]) => (
-            <article key={title} className="community-card">
+          {content.communities.map((community) => {
+            const Icon = iconMap[community.icon] || Users;
+            return <article key={community.title} className="community-card">
               <Icon size={32} />
-              <h3>{title}</h3>
-              <p>{text}</p>
-              <Link to={'/contact?interest=' + encodeURIComponent(title)}>
+              <h3>{community.title}</h3>
+              <p>{community.description}</p>
+              <Link to={'/contact?interest=' + encodeURIComponent(community.title)}>
                 Enquire for your group <MoveRight size={16} />
               </Link>
-            </article>
-          ))}
+            </article>;
+          })}
         </div>
       </section>
     </>

@@ -50,6 +50,30 @@ test('Complete access, content, booking and membership flow', async () => {
     });
     assert.equal(a.status, 200);
     const ac = a.cookie;
+    const managed = await request(
+      '/admin/users',
+      'POST',
+      {
+        name: 'Managed Member',
+        email: 'managed@example.com',
+        password: 'managed-password-123',
+        role: 'member',
+      },
+      ac,
+    );
+    assert.equal(managed.status, 201);
+    assert.equal(
+      (
+        await request(
+          '/admin/users/' + managed.data.id,
+          'PUT',
+          { name: 'Updated Member', password: 'updated-password-123' },
+          ac,
+        )
+      ).status,
+      200,
+    );
+    assert.equal((await request('/admin/users/' + managed.data.id, 'DELETE', null, ac)).status, 200);
     const start = new Date(Date.now() + 86400000).toISOString(),
       end = new Date(Date.now() + 90000000).toISOString();
     const slot = await request(

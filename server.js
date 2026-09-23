@@ -5,7 +5,7 @@ import { app } from './apps/api/src/app.js';
 import { config } from './apps/api/src/config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = 3000;
+const PORT = config.port;
 
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

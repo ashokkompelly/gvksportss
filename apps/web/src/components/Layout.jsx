@@ -12,8 +12,9 @@ import {
   MessageSquare,
   ShieldCheck,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from './ui';
 
 const links = [
   { name: 'Home', to: '/' },
@@ -27,6 +28,8 @@ const links = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const [error, setError] = useState('');
+  const { data: pages } = useData('/catalog/pages');
+  const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export default function Layout() {
       <header className="header">
         <Link to="/" className="brand" aria-label="GVK Sportss Home">
           <img
-            src="/logo.png"
+            src="/logo.jpg"
             alt="GVK Sportss Logo"
             className="brand-logo-img"
             onError={(e) => {
@@ -96,108 +99,89 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Comprehensive Sports Footer with Sample Contact Details */}
-      <footer>
+      {footer && <footer>
         <div className="footer-top">
           {/* Brand Col */}
           <div className="footer-brand">
             <Link to="/" className="brand">
               <img
-                src="/logo.png"
+                src="/logo.jpg"
                 alt="GVK Sportss Logo"
                 className="brand-logo-img"
                 style={{ height: '48px', width: '48px' }}
               />
               <div className="brand-text">
-                <strong style={{ fontSize: '20px' }}>GVK SPORTSS</strong>
-                <small>PLAY · LEARN · GROW</small>
+                <strong style={{ fontSize: '20px' }}>{footer.brandName}</strong>
+                <small>{footer.brandTagline}</small>
               </div>
             </Link>
             <p>
-              Premier sports training academy specializing in professional badminton court coaching,
-              official Chesslang digital masterclasses, and competitive sports championships.
+              {footer.brandDescription}
             </p>
             <a
-              href="https://wa.me/919876543210?text=Hi%20GVK%20Sportss,%20I%20would%20like%20to%20enquire%20about%20coaching%20sessions."
+              href={`https://wa.me/${footer.whatsappNumber}?text=${encodeURIComponent(footer.whatsappMessage)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="footer-whatsapp-btn"
             >
-              <MessageSquare size={16} /> WhatsApp Us Quick
+              <MessageSquare size={16} /> {footer.whatsappLabel}
             </a>
           </div>
 
           {/* Quick Links */}
           <div className="footer-col">
-            <h4>Academy Links</h4>
+            <h4>{footer.quickLinksTitle}</h4>
             <ul className="footer-links">
-              <li><Link to="/coaching?sport=Badminton">Badminton Coaching</Link></li>
-              <li><Link to="/coaching?sport=Chess">Chess Coaching</Link></li>
-              <li><Link to="/events">Tournaments & Leagues</Link></li>
-              <li><Link to="/about">Coaching Faculty & Mentors</Link></li>
-              <li><Link to="/gallery">Moments & Highlights</Link></li>
-              <li><Link to="/admin">Admin Staff Portal</Link></li>
+              {footer.quickLinks.map((link) => <li key={link.label}><Link to={link.href}>{link.label}</Link></li>)}
             </ul>
           </div>
 
           {/* Training Programs */}
           <div className="footer-col">
-            <h4>Programs</h4>
+            <h4>{footer.programsTitle}</h4>
             <ul className="footer-links">
-              <li><Link to="/coaching">Grassroots Youth (5-10 yrs)</Link></li>
-              <li><Link to="/coaching">Elite Competitive Squad</Link></li>
-              <li><Link to="/coaching">Adult High-Fitness Batches</Link></li>
-              <li><Link to="/coaching?sport=Chess">Chess Coaching & Puzzles</Link></li>
-              <li><Link to="/contact?interest=Schools">School & Corporate Leagues</Link></li>
+              {footer.programs.map((link) => <li key={link.label}><Link to={link.href}>{link.label}</Link></li>)}
             </ul>
           </div>
 
           {/* Contact Info Col */}
           <div className="footer-col">
-            <h4>Contact Arena</h4>
+            <h4>{footer.contactTitle}</h4>
             <div className="contact-item">
               <PhoneCall size={16} />
               <div>
-                <a href="tel:+919876543210">+91 98765 43210</a> / <a href="tel:+919123456789">+91 91234 56789</a>
-                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Reception & Coaching Desk</div>
+                {footer.phones.map((phone, index) => <span key={phone}>{index ? ' / ' : ''}<a href={`tel:${phone.replace(/\D/g, '')}`}>{phone}</a></span>)}
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{footer.contactName}</div>
               </div>
             </div>
             <div className="contact-item">
               <Mail size={16} />
               <div>
-                <a href="mailto:info@gvksportss.com">info@gvksportss.com</a>
-                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>coaching@gvksportss.com</div>
+                {footer.emails.map((email, index) => <span key={email}>{index ? <><br /></> : null}<a href={`mailto:${email}`}>{email}</a></span>)}
               </div>
             </div>
             <div className="contact-item">
               <MapPin size={16} />
               <div>
-                <strong>GVK Sportss Arena</strong><br />
-                Plot 42, Financial District, Gachibowli,<br />
-                Hyderabad, Telangana 500032
+                {footer.address.map((line) => <Fragment key={line}>{line}<br /></Fragment>)}
               </div>
             </div>
             <div className="contact-item">
               <Clock size={16} />
               <div>
-                <strong>Operating Hours:</strong><br />
-                Mon – Sun: 6:00 AM – 10:00 PM
+                {footer.hours.map((line) => <Fragment key={line}>{line}<br /></Fragment>)}
               </div>
             </div>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <div>
-            © {new Date().getFullYear()} GVK Sportss Academy. All rights reserved. Play. Learn. Grow.
-          </div>
+          <div>© {new Date().getFullYear()} {footer.copyright}</div>
           <div style={{ display: 'flex', gap: '20px' }}>
-            <Link to="/about">Our Team</Link>
-            <Link to="/contact">Directions</Link>
-            <Link to="/login">Member Login</Link>
+            {footer.bottomLinks.map((link) => <Link key={link.label} to={link.href}>{link.label}</Link>)}
           </div>
         </div>
-      </footer>
+      </footer>}
 
       {/* Trending Mobile Bottom Navigation Bar */}
       <nav className="bottom-nav" aria-label="Mobile navigation">

@@ -1,10 +1,19 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db, resource, resources, audit, transaction } from '../db/index.js';
-import { authenticated, admin as requireAdmin } from './auth.js';
+import { authenticated, admin as requireAdmin, hashPassword } from './auth.js';
 import { schemas, parse, fail, id } from './schemas.js';
 export const admin = Router();
 admin.use(authenticated, requireAdmin);
+const userCreate = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.email().max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(12).max(128),
+  role: z.enum(['member', 'admin']).default('member'),
+});
+const userUpdate = userCreate.partial().extend({
+  password: z.string().min(12).max(128).optional(),
+});
 admin.get('/overview', (req, res) =>
   res.json({
     users: db.prepare('SELECT id,name,email,role,created_at FROM users ORDER BY id DESC').all(),
@@ -45,6 +54,72 @@ admin.patch('/memberships/:id', (req, res) => {
     );
     audit(req.user, 'membership:' + v.status, m.id);
   });
+  res.json({ ok: true });
+});
+for (const [route, table] of [['bookings', 'bookings'], ['registrations', 'registrations']]) {
+  admin.delete('/' + route + '/:id', (req, res) => {
+    const result = db.prepare(`DELETE FROM ${table} WHERE id=?`).run(id(req.params.id));
+    if (!result.changes) fail(404, 'Reservation not found.');
+    audit(req.user, route + ':delete', id(req.params.id));
+    res.json({ ok: true });
+  });
+}
+admin.get('/users', (req, res) =>
+  res.json(db.prepare('SELECT id,name,email,role,created_at FROM users ORDER BY id DESC').all()),
+);
+admin.post('/users', async (req, res) => {
+  const v = parse(userCreate, req.body);
+  try {
+    const result = db
+      .prepare('INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)')
+      .run(v.name, v.email, await hashPassword(v.password), v.role);
+    audit(req.user, 'user:create', Number(result.lastInsertRowid));
+    res.status(201).json({ id: Number(result.lastInsertRowid), name: v.name, email: v.email, role: v.role });
+  } catch (e) {
+    if (e.code?.startsWith('ERR_SQLITE')) fail(409, 'That email address is already in use.');
+    throw e;
+  }
+});
+admin.put('/users/:id', async (req, res) => {
+  const target = id(req.params.id);
+  const current = db.prepare('SELECT id,name,email,role FROM users WHERE id=?').get(target);
+  if (!current) fail(404, 'User not found.');
+  const v = parse(userUpdate, req.body);
+  if (!Object.keys(v).length) fail(400, 'Provide at least one field to update.');
+  const nextRole = v.role || current.role;
+  if (target === req.user.id && nextRole !== 'admin') fail(400, 'You cannot remove your own admin access.');
+  if (current.role === 'admin' && nextRole !== 'admin') {
+    const admins = db.prepare("SELECT count(*) AS count FROM users WHERE role='admin'").get().count;
+    if (admins <= 1) fail(409, 'Keep at least one administrator account.');
+  }
+  try {
+    const password = v.password ? await hashPassword(v.password) : undefined;
+    db.prepare(
+      'UPDATE users SET name=COALESCE(?,name),email=COALESCE(?,email),password=COALESCE(?,password),role=COALESCE(?,role) WHERE id=?',
+    ).run(v.name ?? null, v.email ?? null, password ?? null, v.role ?? null, target);
+    audit(req.user, 'user:update', target);
+    res.json(db.prepare('SELECT id,name,email,role,created_at FROM users WHERE id=?').get(target));
+  } catch (e) {
+    if (e.code?.startsWith('ERR_SQLITE')) fail(409, 'That email address is already in use.');
+    throw e;
+  }
+});
+admin.delete('/users/:id', (req, res) => {
+  const target = id(req.params.id);
+  if (target === req.user.id) fail(400, 'You cannot delete your own account.');
+  const user = db.prepare('SELECT id,role FROM users WHERE id=?').get(target);
+  if (!user) fail(404, 'User not found.');
+  if (user.role === 'admin') {
+    const admins = db.prepare("SELECT count(*) AS count FROM users WHERE role='admin'").get().count;
+    if (admins <= 1) fail(409, 'Keep at least one administrator account.');
+  }
+  try {
+    db.prepare('DELETE FROM users WHERE id=?').run(target);
+    audit(req.user, 'user:delete', target);
+  } catch (e) {
+    if (e.code?.startsWith('ERR_SQLITE')) fail(409, 'This member has linked bookings or registrations.');
+    throw e;
+  }
   res.json({ ok: true });
 });
 admin.get('/:kind', (req, res) => {

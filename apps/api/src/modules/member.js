@@ -17,6 +17,9 @@ member.get('/', (req, res) => {
       )
       .all(req.user.id)
       .map((r) => ({ ...r, item: JSON.parse(r.data), data: undefined }));
+  db.prepare(
+    "UPDATE memberships SET status='cancelled' WHERE user_id=? AND status='active' AND valid_until IS NOT NULL AND valid_until<=?",
+  ).run(req.user.id, new Date().toISOString());
   res.json({
     bookings: joined('bookings', 'slot_id'),
     registrations: joined('registrations', 'event_id'),

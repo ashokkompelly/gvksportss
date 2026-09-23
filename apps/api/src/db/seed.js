@@ -164,3 +164,108 @@ if (!db.prepare('SELECT 1 FROM migrations WHERE version=2').get())
 
     db.prepare('INSERT INTO migrations(version) VALUES(2)').run();
   });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=3').get())
+  transaction(() => {
+    const page = db.prepare("SELECT id,data FROM resources WHERE kind='pages' AND data LIKE '%\"slug\":\"about\"%'").get();
+    if (page) {
+      const data = JSON.parse(page.data);
+      if (data.title === 'Two sports. One shared ambition.') {
+        data.title = 'Trainers & Team';
+        db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), page.id);
+      }
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(3)').run();
+  });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=4').get())
+  transaction(() => {
+    const page = db.prepare("SELECT id,data FROM resources WHERE kind='pages' AND data LIKE '%\"slug\":\"home\"%'").get();
+    if (page) {
+      const data = JSON.parse(page.data);
+      data.config = {
+        eyebrow: 'CHESS + BADMINTON • HYDERABAD',
+        heroDescription: 'Elevate your game with world-class coaching, Olympic-grade badminton courts, and interactive chess coaching powered by the Chesslang platform.',
+        primaryAction: { label: 'Explore Coaching Batches', href: '/coaching' },
+        secondaryAction: { label: 'Tournaments & Events', href: '/events' },
+        heroImage: '/logo.jpg',
+        heroImageAlt: 'GVK Sportss Gold and Black Emblem',
+        heroLabel: 'THE GVK STANDARD',
+        heroStandard: 'Discipline. Technique. Mastery.',
+        heroFoot: ['01 / 8 BWF Synthetic Courts', '02 / Chesslang Platform Coaching', '03 / FIDE & BWF Certified Coaches'],
+        metrics: [
+          { value: '8 Courts', label: 'Olympic-Grade BWF Mats' },
+          { value: 'Chesslang', label: 'Platform Coaching' },
+          { value: '15+ Coaches', label: 'BWF & FIDE Certified Mentors' },
+          { value: '500+', label: 'Active Academy Athletes' },
+        ],
+        sportsEyebrow: 'CHOOSE YOUR DISCIPLINE',
+        sportsTitle: 'Precision on court.\nStrategy on board.',
+        sportsDescription: 'Whether smashing at 350+ km/h or outmaneuvering an opponent in a Sicilian defense, GVK provides championship-level mentoring.',
+        sports: [
+          { number: '01 / BADMINTON HIGH-PERFORMANCE', title: 'Badminton Academy', description: 'BWF Level 2 certified coaching, slow-motion biomechanics video smash analysis, radar speed tracking, and Olympic-spec synthetic shock-absorbing courts.', badges: ['BWF Certified', 'Video Analysis', 'Smash Radar'], href: '/coaching?sport=Badminton' },
+          { number: '02 / CHESS COACHING', title: 'Chess Masterclass', description: 'Integrated with the Chesslang platform for digital coaching. FIDE-rated trainers, interactive live board sessions, tactical puzzle homework, and regular game debriefs.', badges: ['Chesslang Platform Coaching', 'FIDE Mentors', 'Interactive Boards'], href: '/coaching?sport=Chess' },
+        ],
+        communityEyebrow: 'SPORTS FOR EVERY COMMUNITY',
+        communityTitle: 'Bring championship energy into play.',
+        communityAction: { label: 'Plan an Experience', href: '/contact' },
+        communities: [
+          { icon: 'school', title: 'Schools & Academies', description: 'Curriculum-integrated badminton and chess coaching, inter-school tournaments, and youth scout camps.' },
+          { icon: 'users', title: 'Gated Communities', description: 'Resident leagues, weekend clinics, certified coaches on-site, and friendly multi-age championships.' },
+          { icon: 'building', title: 'Corporate Leagues', description: 'Executive stress-relief wellness, corporate badminton cups, and workplace chess tournaments.' },
+        ],
+      };
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), page.id);
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(4)').run();
+  });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=5').get())
+  transaction(() => {
+    const footer = {
+      brandName: 'GVK SPORTSS',
+      brandTagline: 'PLAY · LEARN · GROW',
+      brandDescription: 'Premier sports training academy specializing in professional badminton court coaching, official Chesslang digital masterclasses, and competitive sports championships.',
+      whatsappLabel: 'WhatsApp Vamshi Krishna',
+      whatsappNumber: '919492063258',
+      whatsappMessage: 'Hi Vamshi Krishna, I would like to enquire about GVK Sportss coaching sessions.',
+      quickLinksTitle: 'Academy Links',
+      quickLinks: [
+        { label: 'Badminton Coaching', href: '/coaching?sport=Badminton' },
+        { label: 'Chess Coaching', href: '/coaching?sport=Chess' },
+        { label: 'Tournaments & Leagues', href: '/events' },
+        { label: 'Coaching Faculty & Mentors', href: '/about' },
+        { label: 'Moments & Highlights', href: '/gallery' },
+        { label: 'Admin Staff Portal', href: '/admin' },
+      ],
+      programsTitle: 'Programs',
+      programs: [
+        { label: 'Grassroots Youth (5-10 yrs)', href: '/coaching' },
+        { label: 'Elite Competitive Squad', href: '/coaching' },
+        { label: 'Adult High-Fitness Batches', href: '/coaching' },
+        { label: 'Chess Coaching & Puzzles', href: '/coaching?sport=Chess' },
+        { label: 'School & Corporate Leagues', href: '/contact?interest=Schools' },
+      ],
+      contactTitle: 'Contact Arena',
+      contactName: 'Vamshi Krishna · Coaching Desk',
+      phones: ['+91 94920 63258', '+91 91234 56789'],
+      emails: ['info@gvksportss.com', 'coaching@gvksportss.com'],
+      address: ['GVK Sportss Arena', 'Plot 42, Financial District, Gachibowli,', 'Hyderabad, Telangana 500032'],
+      hours: ['Operating Hours:', 'Mon – Sun: 6:00 AM – 10:00 PM'],
+      copyright: 'GVK Sportss Academy. All rights reserved. Play. Learn. Grow.',
+      bottomLinks: [
+        { label: 'Our Team', href: '/about' },
+        { label: 'Directions', href: '/contact' },
+        { label: 'Member Login', href: '/login' },
+      ],
+    };
+    const existing = db.prepare("SELECT id,data FROM resources WHERE kind='pages' AND data LIKE '%\"slug\":\"footer\"%'").get();
+    if (existing) {
+      const data = JSON.parse(existing.data);
+      data.config = footer;
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), existing.id);
+    } else {
+      db.prepare('INSERT INTO resources(kind,data) VALUES(?,?)').run('pages', JSON.stringify({ published: true, slug: 'footer', title: 'Site Footer', body: 'Footer configuration', config: footer }));
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(5)').run();
+  });

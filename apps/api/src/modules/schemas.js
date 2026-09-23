@@ -12,6 +12,7 @@ export const schemas = {
       .max(70),
     title,
     body: description,
+    config: z.record(z.string(), z.unknown()).default({}),
     published,
   }),
   programs: z.object({ title, sport, level: title, description, mode: title, published }),

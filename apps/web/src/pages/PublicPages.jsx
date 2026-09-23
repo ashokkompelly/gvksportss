@@ -214,10 +214,10 @@ export function Contact() {
           <div style={{ color: 'var(--gold)', marginBottom: '12px' }}>
             <PhoneCall size={26} />
           </div>
-          <h3 style={{ fontSize: '18px', margin: '0 0 6px' }}>Phone Numbers</h3>
-          <p style={{ fontSize: '14px', margin: '0 0 8px' }}>Direct desk & coaching hotline</p>
+          <h3 style={{ fontSize: '18px', margin: '0 0 6px' }}>Vamshi Krishna</h3>
+          <p style={{ fontSize: '14px', margin: '0 0 8px' }}>Direct coaching contact</p>
           <div style={{ fontSize: '15px', fontWeight: '700', color: '#fff' }}>
-            <a href="tel:+919876543210">+91 98765 43210</a>
+            <a href="tel:+919492063258">+91 94920 63258</a>
             <br />
             <a href="tel:+919123456789">+91 91234 56789</a>
           </div>
@@ -243,7 +243,7 @@ export function Contact() {
           <h3 style={{ fontSize: '18px', margin: '0 0 6px' }}>WhatsApp Instant</h3>
           <p style={{ fontSize: '14px', margin: '0 0 8px' }}>Quick batch enquiry & slots</p>
           <a
-            href="https://wa.me/919876543210?text=Hi%20GVK%20Sportss,%20I%20would%20like%20to%20enquire%20about%20coaching%20slots."
+            href="https://wa.me/919492063258?text=Hi%20Vamshi%20Krishna,%20I%20would%20like%20to%20enquire%20about%20GVK%20Sportss%20coaching%20slots."
             target="_blank"
             rel="noopener noreferrer"
             className="button small"

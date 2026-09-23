@@ -12,7 +12,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to Node on port 4000. The SQLite database is created automatically under `data/gvk.sqlite`. Keep the entire workspace structure intact. Windows users can copy `.env.example` to `.env` in Explorer instead of running `cp`.
+Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. The SQLite database is created automatically under `data/gvk.sqlite`. Keep the entire workspace structure intact. Windows users can copy `.env.example` to `.env` in Explorer instead of running `cp`.
 
 ## Create your first administrator
 
@@ -76,7 +76,7 @@ npm test
 npm run build
 ```
 
-To serve the built app locally from Node, set `APP_ORIGIN=http://localhost:4000` in `.env`, then run `npm start` and open that address. The Node server serves the built React app and API together.
+To serve the built app locally from Node, set `APP_ORIGIN=http://localhost:3000` in `.env`, then run `npm start` and open that address. The Node server serves the built React app and API together.
 
 For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, choose a persistent `DATABASE_PATH`, build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. Do not use an ephemeral filesystem for the database. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
 

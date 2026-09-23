@@ -2,6 +2,12 @@ import { z } from 'zod';
 const title = z.string().trim().min(2).max(120),
   description = z.string().trim().min(5).max(5000),
   sport = z.enum(['Chess', 'Badminton']);
+const media = z
+  .string()
+  .max(2000)
+  .refine((value) => (value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//.test(value), 'Use an HTTPS URL or local /asset path')
+  .optional()
+  .default('');
 const published = z.boolean().default(false),
   integer = z.number().int().min(1).max(10000);
 export const schemas = {
@@ -15,7 +21,7 @@ export const schemas = {
     config: z.record(z.string(), z.unknown()).default({}),
     published,
   }),
-  programs: z.object({ title, sport, level: title, description, mode: title, published }),
+  programs: z.object({ title, sport, level: title, description, mode: title, image: media, published }),
   events: z.object({
     title,
     sport,
@@ -24,6 +30,7 @@ export const schemas = {
     location: title,
     capacity: integer,
     membersOnly: z.boolean().default(false),
+    image: media,
     published,
   }),
   slots: z

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
   MoveRight,
@@ -14,8 +15,30 @@ const iconMap = { school: School, users: Users, building: Building2 };
 
 export default function Home() {
   const { data, error } = useData('/catalog/pages');
+  const events = useData('/catalog/events');
   const home = data?.find((p) => p.slug === 'home');
   const content = home?.config;
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [eventSlide, setEventSlide] = useState(0);
+  const upcomingEvents = events.data?.filter((event) => new Date(event.start) > new Date()) || [];
+  const featuredEvent = upcomingEvents[eventSlide];
+  const heroSlides = content ? [
+    { image: content.heroImage, label: content.heroLabel, standard: content.heroStandard },
+    ...content.sports.filter((sport) => sport.image).map((sport) => ({ image: sport.image, label: sport.title, standard: 'Train with purpose. Compete with confidence.' })),
+    ...(featuredEvent?.image ? [{ image: featuredEvent.image, label: 'ARENA EVENTS', standard: featuredEvent.title }] : []),
+  ] : [];
+
+  useEffect(() => {
+    if (heroSlides.length < 2) return undefined;
+    const timer = window.setInterval(() => setHeroSlide((current) => (current + 1) % heroSlides.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (upcomingEvents.length < 2) return undefined;
+    const timer = window.setInterval(() => setEventSlide((current) => (current + 1) % upcomingEvents.length), 6500);
+    return () => window.clearInterval(timer);
+  }, [upcomingEvents.length]);
 
   if (!content) return <State data={data} error={error} />;
   const primaryAction = content.primaryAction;
@@ -46,10 +69,24 @@ export default function Home() {
           </div>
         </div>
         <div className="hero-art">
-          <img src={content.heroImage} alt={content.heroImageAlt} />
-          <div className="art-label">
-            <span>{content.heroLabel}</span>
-            <strong>{content.heroStandard}</strong>
+          <div className="hero-slider" aria-label="GVK sports highlights">
+            {heroSlides.map((slide, index) => (
+              <img
+                key={`${slide.image}-${index}`}
+                className={index === heroSlide ? 'active' : ''}
+                src={slide.image}
+                alt={index === 0 ? content.heroImageAlt : slide.label}
+              />
+            ))}
+            <div className="hero-slider-caption">
+              <span>{heroSlides[heroSlide]?.label}</span>
+              <strong>{heroSlides[heroSlide]?.standard}</strong>
+            </div>
+            <div className="hero-slider-dots">
+              {heroSlides.map((slide, index) => (
+                <button key={`${slide.label}-dot`} className={index === heroSlide ? 'active' : ''} onClick={() => setHeroSlide(index)} aria-label={`Show highlight ${index + 1}`} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -66,6 +103,28 @@ export default function Home() {
         </div>
       </section>
 
+      {featuredEvent && (
+        <section className="section home-event-section">
+          <div className="home-event-feature">
+            <div className="home-event-media" style={{ backgroundImage: `url(${featuredEvent.image})` }}>
+              <span className="badge">Next on the arena calendar</span>
+            </div>
+            <div className="home-event-copy">
+              <span className="eyebrow">UPCOMING EVENT</span>
+              <h2>{featuredEvent.title}</h2>
+              <p>{featuredEvent.description}</p>
+              <div className="event-meta">{featuredEvent.sport} · {new Date(featuredEvent.start).toLocaleDateString('en-IN', { dateStyle: 'medium' })} · {featuredEvent.location}</div>
+              <Link className="button gold" to="/events">See all events <ArrowUpRight size={17} /></Link>
+              {upcomingEvents.length > 1 && <div className="event-slider-controls">
+                <button type="button" onClick={() => setEventSlide((current) => (current - 1 + upcomingEvents.length) % upcomingEvents.length)} aria-label="Previous event">←</button>
+                <span>{eventSlide + 1} / {upcomingEvents.length}</span>
+                <button type="button" onClick={() => setEventSlide((current) => (current + 1) % upcomingEvents.length)} aria-label="Next event">→</button>
+              </div>}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Two Sports Cards */}
       <section className="section">
         <div className="section-title">
@@ -79,6 +138,7 @@ export default function Home() {
         <div className="sport-grid">
           {content.sports.map((sport) => (
             <Link className="sport-card" to={sport.href} key={sport.title}>
+              {sport.image && <div className="sport-card-media" style={{ backgroundImage: `url(${sport.image})` }} aria-hidden="true" />}
               <span className="sport-number">{sport.number}</span>
               <h3>{sport.title}</h3>
               <p>{sport.description}</p>

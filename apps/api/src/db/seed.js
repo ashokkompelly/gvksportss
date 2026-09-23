@@ -269,3 +269,55 @@ if (!db.prepare('SELECT 1 FROM migrations WHERE version=5').get())
     }
     db.prepare('INSERT INTO migrations(version) VALUES(5)').run();
   });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=6').get())
+  transaction(() => {
+    const media = {
+      badminton: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=85',
+      chess: 'https://images.unsplash.com/photo-1586165368502-1bad197a6461?auto=format&fit=crop&w=1200&q=85',
+      event: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1600&q=85',
+    };
+    const updates = [
+      ['Badminton High-Performance Squad', media.badminton],
+      ['Grassroots Junior Badminton (Ages 5-12)', media.badminton],
+      ['Chesslang FIDE Grandmaster Masterclass', media.chess],
+      ['Hyderabad Open Badminton Championship 2026', media.event],
+      ['GVK × Chesslang Blitz Arena Tournament', media.event],
+      ['Corporate Sports League — Badminton Cup', media.event],
+    ];
+    for (const [title, image] of updates) {
+      const row = db.prepare('SELECT id,data FROM resources WHERE data LIKE ?').get(`%"title":"${title}"%`);
+      if (row) {
+        const data = JSON.parse(row.data);
+        data.image = image;
+        db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), row.id);
+      }
+    }
+    const home = db.prepare("SELECT id,data FROM resources WHERE kind='pages' AND data LIKE '%\"slug\":\"home\"%'").get();
+    if (home) {
+      const data = JSON.parse(home.data);
+      data.config.sports = data.config.sports.map((sport) => ({
+        ...sport,
+        image: sport.href.includes('Badminton') ? media.badminton : media.chess,
+      }));
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), home.id);
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(6)').run();
+  });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=7').get())
+  transaction(() => {
+    const eventImages = {
+      Badminton: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1400&q=85',
+      Chess: 'https://images.unsplash.com/photo-1586165368502-1bad197a6461?auto=format&fit=crop&w=1400&q=85',
+    };
+    for (const [sport, image] of Object.entries(eventImages)) {
+      const rows = db.prepare('SELECT id,data FROM resources WHERE kind=\'events\' AND data LIKE ?').all(`%\"sport\":\"${sport}\"%`);
+      for (const row of rows) {
+        const data = JSON.parse(row.data);
+        data.image = image;
+        db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), row.id);
+      }
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(7)').run();
+  });

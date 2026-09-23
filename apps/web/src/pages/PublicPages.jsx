@@ -18,6 +18,7 @@ import {
 const mentors = [
   {
     name: 'Vamshi Krishna',
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=85',
     role: 'Founder & Managing Director',
     category: 'Leadership',
     experience: '14+ Years Experience',
@@ -27,6 +28,7 @@ const mentors = [
   },
   {
     name: 'Mohan',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=85',
     role: 'Badminton Operations Lead',
     category: 'Badminton',
     experience: '8+ Years Experience',
@@ -38,6 +40,7 @@ const mentors = [
   
   {
     name: 'Sunil',
+    image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=85',
     role: 'Creative & Media Director',
     category: 'Leadership',
     experience: '10+ Years Experience',
@@ -47,6 +50,7 @@ const mentors = [
   },
   {
     name: 'Anup',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=85',
     role: 'Chess Operations Director',
     category: 'Chess',
     experience: '11+ Years Experience',
@@ -56,6 +60,7 @@ const mentors = [
   },
   {
     name: 'Ashok',
+    image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=600&q=85',
     role: 'Digital & Web Director',
     category: 'Leadership',
     experience: '12+ Years Experience',
@@ -113,6 +118,7 @@ export function ContentPage({ slug: fixed }) {
                     .filter((m) => filter === 'All' || m.category === filter)
                     .map((m) => (
                       <article className="coach-card" key={m.name}>
+                        <img className="coach-photo" src={m.image} alt={m.name} loading="lazy" />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <span className="coach-exp-badge">
                             <Award size={13} /> {m.experience}

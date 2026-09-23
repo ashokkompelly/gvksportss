@@ -3,7 +3,7 @@ import { Heading, useData, State, Notice, Action, Empty } from '../components/ui
 import { api, date, money } from '../lib/api';
 const fields = {
   pages: { slug: 'text', title: 'text', body: 'textarea' },
-  programs: { title: 'text', sport: 'sport', level: 'text', description: 'textarea', mode: 'text' },
+  programs: { title: 'text', sport: 'sport', level: 'text', description: 'textarea', mode: 'text', image: 'text' },
   events: {
     title: 'text',
     sport: 'sport',
@@ -12,6 +12,7 @@ const fields = {
     location: 'text',
     capacity: 'number',
     membersOnly: 'checkbox',
+    image: 'text',
   },
   slots: {
     title: 'text',
@@ -33,6 +34,7 @@ const labels = {
   durationDays: 'Duration (days)',
   price: 'Price (INR)',
   url: 'Image URL (HTTPS or /local-path)',
+  image: 'Image URL (HTTPS or /local-path)',
   start: 'Starts at (your device timezone)',
   end: 'Ends at (your device timezone)',
 };
@@ -266,6 +268,7 @@ function HomeEditor({ item, onClose, onSave }) {
           {control('Card title', sport.title, (v) => updateList('sports', index, 'title', v))}
           {control('Card description', sport.description, (v) => updateList('sports', index, 'description', v), 'textarea')}
           {control('Badges (comma separated)', sport.badges.join(', '), (v) => updateList('sports', index, 'badges', v.split(',').map((badge) => badge.trim()).filter(Boolean)))}
+          {control('Card image path or HTTPS URL', sport.image, (v) => updateList('sports', index, 'image', v))}
           {control('Card link', sport.href, (v) => updateList('sports', index, 'href', v))}
           <button type="button" className="text-button danger" onClick={() => removeList('sports', index)}>Remove card</button>
         </div>)}

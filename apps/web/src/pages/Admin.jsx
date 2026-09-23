@@ -282,6 +282,7 @@ function HomeEditor({ item, onClose, onSave }) {
         {control('Button link', config.communityAction.href, (v) => setNested('communityAction', 'href', v))}
         {config.communities.map((community, index) => <div className="admin-inline-editor" key={`community-${index}`}>
           {control('Icon (school, users, or building)', community.icon, (v) => updateList('communities', index, 'icon', v))}
+          {control('Card image path or HTTPS URL', community.image, (v) => updateList('communities', index, 'image', v))}
           {control('Card title', community.title, (v) => updateList('communities', index, 'title', v))}
           {control('Card description', community.description, (v) => updateList('communities', index, 'description', v), 'textarea')}
           <button type="button" className="text-button danger" onClick={() => removeList('communities', index)}>Remove card</button>

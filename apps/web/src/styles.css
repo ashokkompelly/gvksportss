@@ -483,11 +483,8 @@ small {
 }
 
 .hero-slider::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(7, 9, 8, 0.08), rgba(7, 9, 8, 0.72)), linear-gradient(0deg, rgba(7, 9, 8, 0.76), transparent 48%);
-  pointer-events: none;
+  display: none;
+  top: 10px;
 }
 
 .hero-slider-caption {
@@ -496,6 +493,12 @@ small {
   right: 30px;
   bottom: 62px;
   z-index: 2;
+  padding: 14px 18px;
+  border: 1px solid rgba(239, 195, 94, 0.28);
+  border-radius: 10px;
+  background: rgba(5, 7, 6, 0.58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .hero-slider-caption span {
@@ -543,11 +546,7 @@ small {
 }
 
 .hero-art::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(239, 195, 94, 0.08) 0%, rgba(7, 9, 8, 0.8) 85%);
-  pointer-events: none;
+  display: none;
 }
 
 .art-label {
@@ -631,23 +630,29 @@ small {
    ========================================================================== */
 .sport-card {
   position: relative;
-  padding: 38px 34px;
-  min-height: 280px;
+  padding: 0 34px 34px;
+  min-height: 430px;
   border: 1px solid var(--gold-border);
   border-radius: 16px;
   background: linear-gradient(160deg, #111714 0%, #0a0d0c 100%);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .sport-card-media {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 150px;
+  position: relative;
+  width: calc(100% + 68px);
+  height: 220px;
+  flex: 0 0 220px;
+  margin: 0 -34px 24px;
+  border-radius: 15px 15px 0 0;
   background-position: center;
   background-size: cover;
-  opacity: 0.32;
-  filter: saturate(0.8) contrast(1.05);
+  opacity: 1;
+  filter: saturate(0.9) contrast(1.05);
   transition: transform 0.55s ease, opacity 0.35s ease;
 }
 
@@ -655,11 +660,11 @@ small {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(7, 9, 8, 0.12), #0a0d0c 92%);
+  background: linear-gradient(180deg, rgba(7, 9, 8, 0.04), rgba(10, 13, 12, 0.12) 48%, #0a0d0c 100%);
 }
 
 .sport-card:hover .sport-card-media {
-  opacity: 0.48;
+  opacity: 1;
   transform: scale(1.06);
 }
 
@@ -686,6 +691,8 @@ small {
 }
 
 .sport-number {
+  position: relative;
+  z-index: 1;
   font-size: 11px;
   letter-spacing: 2px;
   font-weight: 800;
@@ -693,12 +700,16 @@ small {
 }
 
 .sport-card h3 {
+  position: relative;
+  z-index: 1;
   font-size: 30px;
-  margin: 28px 0 10px;
+  margin: 18px 0 10px;
   color: #fff;
 }
 
 .sport-card p {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-size: 15px;
   color: var(--muted);
@@ -720,6 +731,11 @@ small {
   transition: all 0.2s ease;
 }
 
+.sport-card .badge {
+  position: relative;
+  z-index: 1;
+}
+
 .sport-card:hover .round-arrow {
   background: var(--gold);
   color: #070908;
@@ -735,11 +751,34 @@ small {
 }
 
 .community-card {
-  padding: 32px 28px;
+  padding: 0 28px 32px;
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: 14px;
   transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.community-card-media {
+  height: 170px;
+  margin: 0 -28px 24px;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(0.82) contrast(1.05);
+  position: relative;
+  border-radius: 13px 13px 0 0;
+}
+
+.community-card-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 9, 8, 0.02), rgba(10, 13, 12, 0.88));
+}
+
+.community-card-content {
+  position: relative;
+  z-index: 1;
 }
 
 .community-card:hover {
@@ -1855,7 +1894,14 @@ footer {
 
   .sport-card {
     min-height: auto;
-    padding: 24px 20px;
+    padding: 0 20px 24px;
+  }
+
+  .sport-card-media {
+    width: calc(100% + 40px);
+    height: 180px;
+    flex-basis: 180px;
+    margin: 0 -20px 20px;
   }
 
   .feature-box {
@@ -1908,6 +1954,15 @@ footer {
 
   .coach-card {
     padding: 22px 18px;
+  }
+
+  .community-card {
+    padding: 0 18px 22px;
+  }
+
+  .community-card-media {
+    margin: 0 -18px 20px;
+    height: 150px;
   }
 
   .auth-wrap {
@@ -2077,8 +2132,44 @@ main {
 }
 
 .header {
-  background: linear-gradient(180deg, rgba(5, 7, 6, 0.98), rgba(7, 9, 8, 0.88));
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(7, 9, 8, 0.96);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  position: sticky;
+  transition: width 0.35s ease, max-width 0.35s ease, margin 0.35s ease, border-radius 0.35s ease, background 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0.08), transparent 28%, rgba(239, 195, 94, 0.04));
+  transition: opacity 0.35s ease;
+}
+
+.header.scrolled {
+  top: 12px;
+  width: calc(100% - 6%);
+  max-width: 1440px;
+  border-color: rgba(239, 195, 94, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(115deg, rgba(20, 29, 25, 0.72), rgba(5, 8, 7, 0.58));
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+
+.header.scrolled::before {
+  opacity: 1;
 }
 
 .hero {
@@ -2167,6 +2258,7 @@ main {
   background:
     linear-gradient(135deg, rgba(239, 195, 94, 0.1), transparent 30%),
     linear-gradient(160deg, #151c18, #080c0a);
+  overflow: hidden;
 }
 
 .event-card .badge {
@@ -2261,6 +2353,24 @@ footer::before {
   .home-event-copy,
   .coaching-event-banner > div:last-child {
     padding: 28px 22px;
+  }
+
+  .header {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .header.scrolled {
+    width: 100%;
+    max-width: none;
+    margin-top: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
   }
 }
 

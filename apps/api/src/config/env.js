@@ -5,5 +5,5 @@ export const config = {
   port: Number(process.env.PORT) || 3000,
   origin: process.env.APP_ORIGIN || 'http://localhost:3000',
   production: process.env.NODE_ENV === 'production',
-  database: process.env.DATABASE_PATH || path.join(root, 'data/gvk.sqlite'),
+  database: path.resolve(root, process.env.DATABASE_PATH || 'data/gvk.sqlite'),
 };

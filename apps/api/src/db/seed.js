@@ -321,3 +321,22 @@ if (!db.prepare('SELECT 1 FROM migrations WHERE version=7').get())
     }
     db.prepare('INSERT INTO migrations(version) VALUES(7)').run();
   });
+
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=8').get())
+  transaction(() => {
+    const images = [
+      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=85',
+    ];
+    const home = db.prepare("SELECT id,data FROM resources WHERE kind='pages' AND data LIKE '%\"slug\":\"home\"%'").get();
+    if (home) {
+      const data = JSON.parse(home.data);
+      data.config.communities = data.config.communities.map((community, index) => ({
+        ...community,
+        image: community.image || images[index % images.length],
+      }));
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(data), home.id);
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(8)').run();
+  });

@@ -169,12 +169,15 @@ export default function Home() {
           {content.communities.map((community) => {
             const Icon = iconMap[community.icon] || Users;
             return <article key={community.title} className="community-card">
-              <Icon size={32} />
-              <h3>{community.title}</h3>
-              <p>{community.description}</p>
-              <Link to={'/contact?interest=' + encodeURIComponent(community.title)}>
-                Enquire for your group <MoveRight size={16} />
-              </Link>
+              {community.image && <div className="community-card-media" style={{ backgroundImage: `url(${community.image})` }} aria-hidden="true" />}
+              <div className="community-card-content">
+                <Icon size={32} />
+                <h3>{community.title}</h3>
+                <p>{community.description}</p>
+                <Link to={'/contact?interest=' + encodeURIComponent(community.title)}>
+                  Enquire for your group <MoveRight size={16} />
+                </Link>
+              </div>
             </article>;
           })}
         </div>

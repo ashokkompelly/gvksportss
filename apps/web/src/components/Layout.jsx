@@ -28,6 +28,7 @@ const links = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const [error, setError] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const { data: pages } = useData('/catalog/pages');
   const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
@@ -36,9 +37,16 @@ export default function Layout() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const updateScrollState = () => setScrolled(window.scrollY > 24);
+    updateScrollState();
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    return () => window.removeEventListener('scroll', updateScrollState);
+  }, []);
+
   return (
     <>
-      <header className="header">
+      <header className={`header${scrolled ? ' scrolled' : ''}`}>
         <Link to="/" className="brand" aria-label="GVK Sportss Home">
           <img
             src="/logo.jpg"

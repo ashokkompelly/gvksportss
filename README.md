@@ -8,15 +8,17 @@ Requires Node.js 24 or later and npm.
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.development.example .env.development
 npm run dev
 ```
 
-Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. The SQLite database is created automatically under `data/gvk.sqlite`. Keep the entire workspace structure intact. Windows users can copy `.env.example` to `.env` in Explorer instead of running `cp`.
+Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. Development reads only `.env.development` and creates `data/gvk-development.sqlite`. Relative database paths resolve from the project root. Windows users can copy `.env.development.example` to `.env.development` in Explorer instead of running `cp`.
+
+Production (`npm start`) reads `.env`; use `.env.example` as its template. Keep its database path and other settings separate from development. Both environment files and the local databases are ignored by Git. Restart the development server after changing environment settings.
 
 ## Create your first administrator
 
-Add your own values to `.env`:
+Add your own values to `.env.development`:
 
 ```dotenv
 ADMIN_NAME=GVK Administrator
@@ -24,7 +26,7 @@ ADMIN_EMAIL=your-email@example.com
 ADMIN_PASSWORD=your-unique-password-at-least-12-characters
 ```
 
-Run `npm run admin:create`, then remove `ADMIN_PASSWORD` from `.env`. Sign in at `/admin/login`. There are no shared/default administrator credentials. Signup always creates members and cannot assign administrator privileges. The command refuses to replace existing accounts.
+Run `npm run admin:create`, then remove `ADMIN_PASSWORD` from `.env.development`. Sign in at `/admin/login`. For production provisioning, use `.env` and the explicit `npm run admin:create:production` command. There are no shared/default administrator credentials. Signup always creates members and cannot assign administrator privileges. The command refuses to replace existing accounts.
 
 ## First setup in the admin portal
 

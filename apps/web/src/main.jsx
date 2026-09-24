@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import Notifications from './components/Notifications';
 import Home from './pages/Home';
 import Coaching from './pages/Coaching';
 import Events from './pages/Events';
@@ -14,6 +15,7 @@ import './styles.css';
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
+      <Notifications />
       <AuthProvider>
         <Routes>
           <Route element={<Layout />}>

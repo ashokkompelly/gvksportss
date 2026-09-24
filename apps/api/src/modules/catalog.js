@@ -4,6 +4,15 @@ import { schemas, fail } from './schemas.js';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { parse } from './schemas.js';
+function publicContent(value) {
+  if (Array.isArray(value))
+    return value.filter((item) => item?.published !== false).map(publicContent);
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, publicContent(item)]),
+    );
+  return value;
+}
 export const catalog = Router();
 catalog.get('/:kind', (req, res) => {
   if (!schemas[req.params.kind]) fail(404, 'Not found');
@@ -15,7 +24,7 @@ catalog.get('/:kind', (req, res) => {
         const count = db.prepare(`SELECT count(*) AS n FROM ${table} WHERE ${key}=?`).get(r.id).n;
         return { ...r, remaining: r.capacity - count };
       }
-      return r;
+      return req.params.kind === 'pages' ? publicContent(r) : r;
     }),
   );
 });

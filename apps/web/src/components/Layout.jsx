@@ -1,4 +1,4 @@
-import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   Home,
   CalendarDays,
@@ -7,23 +7,29 @@ import {
   GraduationCap,
   PhoneCall,
   Mail,
-  MapPin,
   Clock,
   MessageSquare,
-  ShieldCheck,
+  Users,
+  Image,
+  Trophy,
+  Instagram,
 } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from './ui';
+import SiteNavLink from './SiteNavLink';
+import { pageDefaults, mergeContent, visibleItems } from '../../../../shared/siteContent';
 
-const links = [
-  { name: 'Home', to: '/' },
-  { name: 'Coaching', to: '/coaching' },
-  { name: 'Events', to: '/events' },
-  { name: 'Trainers & Team', to: '/about' },
-  { name: 'Gallery', to: '/gallery' },
-  { name: 'Contact', to: '/contact' },
-];
+const navIcons = {
+  home: Home,
+  calendar: CalendarDays,
+  graduation: GraduationCap,
+  phone: PhoneCall,
+  users: Users,
+  image: Image,
+  trophy: Trophy,
+  user: UserRound,
+};
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -32,6 +38,21 @@ export default function Layout() {
   const { data: pages } = useData('/catalog/pages');
   const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
+  const headerPage = pages?.find((page) => page.slug === 'header');
+  const header = headerPage
+    ? mergeContent(pageDefaults.header.config, headerPage.config)
+    : pages === null
+      ? pageDefaults.header.config
+      : null;
+  const brand = header?.brand;
+  const account = header?.account;
+  const menus = header?.navigation.enabled
+    ? visibleItems(header.navigation.items).filter((item) => item.href && item.label)
+    : [];
+  const desktopMenus = menus.filter((item) => item.desktop);
+  const mobileMenus = menus.filter((item) => item.mobile);
+  const signedInAction = user?.role === 'admin' ? account?.adminAction : account?.memberAction;
+  const mobileAccount = user ? signedInAction : account?.mobileGuestAction;
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -46,60 +67,87 @@ export default function Layout() {
 
   return (
     <>
-      <header className={`header${scrolled ? ' scrolled' : ''}`}>
-        <Link to="/" className="brand" aria-label="GVK Sportss Home">
-          <img
-            src="/logo.jpg"
-            alt="GVK Sportss Logo"
-            className="brand-logo-img"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-          <div className="brand-text">
-            <strong>GVK SPORTSS</strong>
-            <small>PLAY · LEARN · GROW</small>
-          </div>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              className={({ isActive }) => (isActive ? 'active' : '')}
-            >
-              {l.name}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="header-actions">
-          {user ? (
-            <>
-              <Link className="account" to={user.role === 'admin' ? '/admin' : '/account'}>
-                <UserRound size={16} />
-                <span>{user.name.split(' ')[0]}</span>
-              </Link>
-              <button
-                className="text-button"
-                onClick={() => logout().catch((e) => setError(e.message))}
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <Link className="button small" to="/login">
-              Member Portal <ArrowUpRight size={15} />
-            </Link>
+      {header && (
+        <header className={`header managed-header${scrolled ? ' scrolled' : ''}`}>
+          <SiteNavLink
+            href={brand.href}
+            newTab={brand.newTab}
+            className="brand"
+            aria-label={brand.name || brand.alt}
+          >
+            {brand.showLogo && brand.image && (
+              <img
+                key={brand.image}
+                src={brand.image}
+                alt={brand.alt}
+                className="brand-logo-img"
+                onError={(event) => {
+                  event.currentTarget.style.visibility = 'hidden';
+                }}
+              />
+            )}
+            {(brand.showName || brand.showTagline) && (
+              <div className="brand-text">
+                {brand.showName && <strong>{brand.name}</strong>}
+                {brand.showTagline && <small>{brand.tagline}</small>}
+              </div>
+            )}
+          </SiteNavLink>
+          {desktopMenus.length > 0 && (
+            <nav className="desktop-nav" aria-label="Main navigation">
+              {desktopMenus.map((item) => (
+                <SiteNavLink
+                  key={item.id}
+                  href={item.href}
+                  newTab={item.newTab}
+                  activeClassName="active"
+                >
+                  {item.label}
+                </SiteNavLink>
+              ))}
+            </nav>
           )}
-        </div>
-      </header>
+          {account.desktopEnabled && (
+            <div className="header-actions">
+              {user ? (
+                <>
+                  <SiteNavLink
+                    href={signedInAction.href}
+                    newTab={signedInAction.newTab}
+                    className="account"
+                  >
+                    <UserRound size={16} />
+                    <span>
+                      {account.showMemberName ? user.name.split(' ')[0] : signedInAction.label}
+                    </span>
+                  </SiteNavLink>
+                  <button
+                    className="text-button"
+                    onClick={() => logout().catch((error) => setError(error.message))}
+                  >
+                    {account.logoutLabel}
+                  </button>
+                </>
+              ) : (
+                <SiteNavLink
+                  href={account.guestAction.href}
+                  newTab={account.guestAction.newTab}
+                  className="button small"
+                >
+                  {account.guestAction.label}
+                  <ArrowUpRight size={15} />
+                </SiteNavLink>
+              )}
+            </div>
+          )}
+        </header>
+      )}
 
       {error && (
         <div className="section" style={{ paddingBottom: 0 }}>
-          <p className="notice error" role="alert">{error}</p>
+          <p className="notice error" role="alert">
+            {error}
+          </p>
         </div>
       )}
 
@@ -107,113 +155,170 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {footer && <footer>
-        <div className="footer-top">
-          {/* Brand Col */}
-          <div className="footer-brand">
-            <Link to="/" className="brand">
-              <img
-                src="/logo.jpg"
-                alt="GVK Sportss Logo"
-                className="brand-logo-img"
-                style={{ height: '48px', width: '48px' }}
-              />
-              <div className="brand-text">
-                <strong style={{ fontSize: '20px' }}>{footer.brandName}</strong>
-                <small>{footer.brandTagline}</small>
+      {footer && (
+        <footer>
+          <div className="footer-top">
+            {/* Brand Col */}
+            <div className="footer-brand">
+              <Link to="/" className="brand">
+                <img
+                  src={brand?.image || pageDefaults.header.config.brand.image}
+                  alt={brand?.alt || footer.brandName}
+                  className="brand-logo-img"
+                  style={{ height: '48px', width: '48px' }}
+                />
+                <div className="brand-text">
+                  <strong style={{ fontSize: '20px' }}>{footer.brandName}</strong>
+                  <small>{footer.brandTagline}</small>
+                </div>
+              </Link>
+              <p>{footer.brandDescription}</p>
+              {footer.instagramEnabled && footer.instagramHandle && (
+                <a
+                  className="footer-instagram-link"
+                  href={
+                    'https://www.instagram.com/' +
+                    encodeURIComponent(footer.instagramHandle.replace(/^@/, '').trim()) +
+                    '/'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Instagram size={25} aria-hidden="true" />
+                  <span>
+                    <small>{footer.instagramLabel}</small>
+                    <strong>@{footer.instagramHandle.replace(/^@/, '').trim()}</strong>
+                  </span>
+                  <ArrowUpRight size={20} aria-hidden="true" />
+                </a>
+              )}
+              <a
+                href={`https://wa.me/${footer.whatsappNumber}?text=${encodeURIComponent(footer.whatsappMessage)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-whatsapp-btn"
+              >
+                <MessageSquare size={16} /> {footer.whatsappLabel}
+              </a>
+            </div>
+
+            {/* Quick Links */}
+            <div className="footer-col">
+              <h4>{footer.quickLinksTitle}</h4>
+              <ul className="footer-links">
+                {footer.quickLinks.map((link) => (
+                  <li key={link.label}>
+                    <Link to={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Training Programs */}
+            <div className="footer-col">
+              <h4>{footer.programsTitle}</h4>
+              <ul className="footer-links">
+                {footer.programs.map((link) => (
+                  <li key={link.label}>
+                    <Link to={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact Info Col */}
+            <div className="footer-col">
+              <h4>{footer.contactTitle}</h4>
+              <div className="contact-item">
+                <PhoneCall size={16} />
+                <div>
+                  {footer.phones.map((phone, index) => (
+                    <span key={phone}>
+                      {index ? ' / ' : ''}
+                      <a href={`tel:${phone.replace(/\D/g, '')}`}>{phone}</a>
+                    </span>
+                  ))}
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                    {footer.contactName}
+                  </div>
+                </div>
               </div>
-            </Link>
-            <p>
-              {footer.brandDescription}
-            </p>
-            <a
-              href={`https://wa.me/${footer.whatsappNumber}?text=${encodeURIComponent(footer.whatsappMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-whatsapp-btn"
+              <div className="contact-item">
+                <Mail size={16} />
+                <div>
+                  {footer.emails.map((email, index) => (
+                    <span key={email}>
+                      {index ? (
+                        <>
+                          <br />
+                        </>
+                      ) : null}
+                      <a href={`mailto:${email}`}>{email}</a>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="contact-item">
+                <Clock size={16} />
+                <div>
+                  {footer.hours.map((line) => (
+                    <Fragment key={line}>
+                      {line}
+                      <br />
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <div>
+              © {new Date().getFullYear()} {footer.copyright}
+            </div>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              {footer.bottomLinks
+                .filter((link) => !/directions|location|address/i.test(link.label))
+                .map((link) => (
+                  <Link key={link.label} to={link.href}>
+                    {link.label}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        </footer>
+      )}
+
+      {header && (mobileMenus.length > 0 || (account.mobileEnabled && mobileAccount?.href)) && (
+        <nav className="bottom-nav managed-bottom-nav" aria-label="Mobile navigation">
+          {mobileMenus.map((item) => {
+            const Icon = navIcons[item.icon] || ArrowUpRight;
+            return (
+              <SiteNavLink
+                key={item.id}
+                href={item.href}
+                newTab={item.newTab}
+                className="bottom-nav-item"
+                activeClassName="active"
+              >
+                <Icon size={22} />
+                <span>{item.label}</span>
+              </SiteNavLink>
+            );
+          })}
+          {account.mobileEnabled && mobileAccount?.href && (
+            <SiteNavLink
+              href={mobileAccount.href}
+              newTab={mobileAccount.newTab}
+              className="bottom-nav-item"
+              activeClassName="active"
             >
-              <MessageSquare size={16} /> {footer.whatsappLabel}
-            </a>
-          </div>
-
-          {/* Quick Links */}
-          <div className="footer-col">
-            <h4>{footer.quickLinksTitle}</h4>
-            <ul className="footer-links">
-              {footer.quickLinks.map((link) => <li key={link.label}><Link to={link.href}>{link.label}</Link></li>)}
-            </ul>
-          </div>
-
-          {/* Training Programs */}
-          <div className="footer-col">
-            <h4>{footer.programsTitle}</h4>
-            <ul className="footer-links">
-              {footer.programs.map((link) => <li key={link.label}><Link to={link.href}>{link.label}</Link></li>)}
-            </ul>
-          </div>
-
-          {/* Contact Info Col */}
-          <div className="footer-col">
-            <h4>{footer.contactTitle}</h4>
-            <div className="contact-item">
-              <PhoneCall size={16} />
-              <div>
-                {footer.phones.map((phone, index) => <span key={phone}>{index ? ' / ' : ''}<a href={`tel:${phone.replace(/\D/g, '')}`}>{phone}</a></span>)}
-                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{footer.contactName}</div>
-              </div>
-            </div>
-            <div className="contact-item">
-              <Mail size={16} />
-              <div>
-                {footer.emails.map((email, index) => <span key={email}>{index ? <><br /></> : null}<a href={`mailto:${email}`}>{email}</a></span>)}
-              </div>
-            </div>
-            <div className="contact-item">
-              <MapPin size={16} />
-              <div>
-                {footer.address.map((line) => <Fragment key={line}>{line}<br /></Fragment>)}
-              </div>
-            </div>
-            <div className="contact-item">
-              <Clock size={16} />
-              <div>
-                {footer.hours.map((line) => <Fragment key={line}>{line}<br /></Fragment>)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div>© {new Date().getFullYear()} {footer.copyright}</div>
-          <div style={{ display: 'flex', gap: '20px' }}>
-            {footer.bottomLinks.map((link) => <Link key={link.label} to={link.href}>{link.label}</Link>)}
-          </div>
-        </div>
-      </footer>}
-
-      {/* Trending Mobile Bottom Navigation Bar */}
-      <nav className="bottom-nav" aria-label="Mobile navigation">
-        <NavLink to="/" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <Home size={22} />
-          <span>Home</span>
-        </NavLink>
-        <NavLink to="/coaching" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <GraduationCap size={22} />
-          <span>Coaching</span>
-        </NavLink>
-        <NavLink to="/events" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <CalendarDays size={22} />
-          <span>Events</span>
-        </NavLink>
-        <NavLink to="/contact" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <PhoneCall size={22} />
-          <span>Contact</span>
-        </NavLink>
-        <NavLink to={user ? (user.role === 'admin' ? '/admin' : '/account') : '/account'} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-          <UserRound size={22} />
-          <span>{user ? 'My GVK' : 'Login'}</span>
-        </NavLink>
-      </nav>
+              <UserRound size={22} />
+              <span>{mobileAccount.label}</span>
+            </SiteNavLink>
+          )}
+        </nav>
+      )}
     </>
   );
 }

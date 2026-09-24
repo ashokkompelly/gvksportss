@@ -1,36 +1,54 @@
 import { z } from 'zod';
+import { validatePageContent } from './page-content.js';
 const title = z.string().trim().min(2).max(120),
   description = z.string().trim().min(5).max(5000),
   sport = z.enum(['Chess', 'Badminton']);
 const media = z
   .string()
   .max(2000)
-  .refine((value) => (value.startsWith('/') && !value.startsWith('//')) || /^https:\/\//.test(value), 'Use an HTTPS URL or local /asset path')
+  .refine(
+    (value) =>
+      value === '' ||
+      (value.startsWith('/') && !value.startsWith('//')) ||
+      /^https:\/\//.test(value),
+    'Use an HTTPS URL or local /asset path',
+  )
   .optional()
   .default('');
 const published = z.boolean().default(false),
   integer = z.number().int().min(1).max(10000);
 export const schemas = {
-  pages: z.object({
-    slug: z
-      .string()
-      .regex(/^[a-z0-9-]+$/)
-      .max(70),
+  pages: z
+    .object({
+      slug: z
+        .string()
+        .regex(/^[a-z0-9-]+$/)
+        .max(70),
+      title,
+      body: description,
+      config: z.record(z.string(), z.unknown()).default({}),
+      published,
+    })
+    .transform(validatePageContent),
+  programs: z.object({
     title,
-    body: description,
-    config: z.record(z.string(), z.unknown()).default({}),
+    sport,
+    level: title,
+    description,
+    mode: title,
+    image: media,
     published,
   }),
-  programs: z.object({ title, sport, level: title, description, mode: title, image: media, published }),
   events: z.object({
     title,
     sport,
     description,
     start: z.iso.datetime({ offset: true }),
-    location: title,
+    location: z.string().trim().max(120).default(''),
     capacity: integer,
     membersOnly: z.boolean().default(false),
-    image: media,
+    image: media.refine((value) => value.trim().length > 0, 'Add an image for this event.'),
+    imageAlt: z.string().trim().max(250).default(''),
     published,
   }),
   slots: z

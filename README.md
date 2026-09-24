@@ -93,7 +93,7 @@ Before a public launch, add verified email/password reset, automated backups and
 ## Current limits
 
 - Local SQLite is for a single persistent Node process. PostgreSQL is the recommended production target when scaling.
-- Gallery entries support image URLs, not direct uploads or video management.
+- Admin image fields support direct JPG, PNG and WebP uploads (up to 10 MB), with previews and replacement. Configure persistent storage for `UPLOAD_DIR`; see [image upload setup](docs/image-uploads.md). Video management is not included.
 - Membership is a manual request/approval flow; no payments, subscriptions, refunds or automated renewals.
 - No email/SMS/WhatsApp sending, password reset or email verification yet.
 - Booking cancellation is currently allowed anytime. Define cutoff/refund rules before launch.

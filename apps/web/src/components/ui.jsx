@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { Eye, EyeOff } from 'lucide-react';
 export function useData(path) {
   const [data, setData] = useState(null),
     [error, setError] = useState('');
   const [version, refresh] = useState(0);
+  const previousPath = useRef(path);
   useEffect(() => {
     let live = true;
     setError('');
-    setData(null);
+    if (previousPath.current !== path) {
+      setData(null);
+      previousPath.current = path;
+    }
     api(path)
       .then((v) => {
         if (live) setData(v);
@@ -20,6 +24,15 @@ export function useData(path) {
       live = false;
     };
   }, [path, version]);
+  useEffect(() => {
+    const refreshContent = () => refresh((v) => v + 1);
+    window.addEventListener('gvk:content-updated', refreshContent);
+    window.addEventListener('focus', refreshContent);
+    return () => {
+      window.removeEventListener('gvk:content-updated', refreshContent);
+      window.removeEventListener('focus', refreshContent);
+    };
+  }, []);
   return { data, error, reload: () => refresh((v) => v + 1) };
 }
 export function State({ data, error, children }) {

@@ -1,13 +1,29 @@
-import { Router } from 'express';
+import { Router, raw } from 'express';
 import { z } from 'zod';
+import { rateLimit } from 'express-rate-limit';
+import { uploadImage } from './uploads.js';
 import { db, resource, resources, audit, transaction } from '../db/index.js';
 import { authenticated, admin as requireAdmin, hashPassword } from './auth.js';
+import { managedSlugs } from '../../../../shared/siteContent.js';
 import { schemas, parse, fail, id } from './schemas.js';
 export const admin = Router();
 admin.use(authenticated, requireAdmin);
+admin.post(
+  '/uploads',
+  rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 60,
+    message: { error: 'Too many uploads. Please try again shortly.' },
+  }),
+  raw({ type: 'application/octet-stream', limit: '10mb', inflate: false }),
+  uploadImage,
+);
 const userCreate = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.email().max(254).transform((value) => value.toLowerCase()),
+  email: z
+    .email()
+    .max(254)
+    .transform((value) => value.toLowerCase()),
   password: z.string().min(12).max(128),
   role: z.enum(['member', 'admin']).default('member'),
 });
@@ -56,7 +72,10 @@ admin.patch('/memberships/:id', (req, res) => {
   });
   res.json({ ok: true });
 });
-for (const [route, table] of [['bookings', 'bookings'], ['registrations', 'registrations']]) {
+for (const [route, table] of [
+  ['bookings', 'bookings'],
+  ['registrations', 'registrations'],
+]) {
   admin.delete('/' + route + '/:id', (req, res) => {
     const result = db.prepare(`DELETE FROM ${table} WHERE id=?`).run(id(req.params.id));
     if (!result.changes) fail(404, 'Reservation not found.');
@@ -74,7 +93,9 @@ admin.post('/users', async (req, res) => {
       .prepare('INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)')
       .run(v.name, v.email, await hashPassword(v.password), v.role);
     audit(req.user, 'user:create', Number(result.lastInsertRowid));
-    res.status(201).json({ id: Number(result.lastInsertRowid), name: v.name, email: v.email, role: v.role });
+    res
+      .status(201)
+      .json({ id: Number(result.lastInsertRowid), name: v.name, email: v.email, role: v.role });
   } catch (e) {
     if (e.code?.startsWith('ERR_SQLITE')) fail(409, 'That email address is already in use.');
     throw e;
@@ -87,7 +108,8 @@ admin.put('/users/:id', async (req, res) => {
   const v = parse(userUpdate, req.body);
   if (!Object.keys(v).length) fail(400, 'Provide at least one field to update.');
   const nextRole = v.role || current.role;
-  if (target === req.user.id && nextRole !== 'admin') fail(400, 'You cannot remove your own admin access.');
+  if (target === req.user.id && nextRole !== 'admin')
+    fail(400, 'You cannot remove your own admin access.');
   if (current.role === 'admin' && nextRole !== 'admin') {
     const admins = db.prepare("SELECT count(*) AS count FROM users WHERE role='admin'").get().count;
     if (admins <= 1) fail(409, 'Keep at least one administrator account.');
@@ -117,7 +139,8 @@ admin.delete('/users/:id', (req, res) => {
     db.prepare('DELETE FROM users WHERE id=?').run(target);
     audit(req.user, 'user:delete', target);
   } catch (e) {
-    if (e.code?.startsWith('ERR_SQLITE')) fail(409, 'This member has linked bookings or registrations.');
+    if (e.code?.startsWith('ERR_SQLITE'))
+      fail(409, 'This member has linked bookings or registrations.');
     throw e;
   }
   res.json({ ok: true });
@@ -129,7 +152,19 @@ admin.get('/:kind', (req, res) => {
 function save(req, res) {
   const { kind } = req.params;
   if (!schemas[kind]) fail(404, 'Not found');
-  const data = parse(schemas[kind], req.body);
+  const existing = req.params.id ? resource(id(req.params.id), kind) : null;
+  if (
+    existing &&
+    kind === 'pages' &&
+    [...managedSlugs, 'footer'].includes(existing.slug) &&
+    req.body.slug !== existing.slug
+  )
+    fail(400, 'This page URL is reserved. Edit its content without changing its slug.');
+  const input =
+    kind === 'pages' && existing && req.body.config === undefined
+      ? { ...req.body, config: existing.config }
+      : req.body;
+  const data = parse(schemas[kind], input);
   transaction(() => {
     const current = req.params.id ? id(req.params.id) : null;
     if (current && !resource(current, kind)) fail(404, 'Not found');

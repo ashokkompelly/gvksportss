@@ -40,6 +40,16 @@ app.use('/api/catalog', catalog);
 app.use('/api/member', member);
 app.use('/api/admin', admin);
 app.use('/api/enquiries', enquiries);
+app.use(
+  '/uploads',
+  express.static(config.uploads, {
+    dotfiles: 'deny',
+    index: false,
+    maxAge: '1y',
+    immutable: true,
+    fallthrough: false,
+  }),
+);
 app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found' }));
 if (config.production) {
   app.use(express.static(path.join(root, 'apps/web/dist')));
@@ -47,7 +57,14 @@ if (config.production) {
 }
 app.use((err, req, res, next) => {
   if (!err.status) console.error(err);
-  res
-    .status(err.status || 500)
-    .json({ error: err.status ? err.message : 'Something went wrong. Please try again.' });
+  res.status(err.status || 500).json({
+    error:
+      err.status === 413 && req.path === '/api/admin/uploads'
+        ? 'Image must be 10 MB or smaller.'
+        : err.status
+          ? req.path.startsWith('/uploads/')
+            ? 'Image not found.'
+            : err.message
+          : 'Something went wrong. Please try again.',
+  });
 });

@@ -41,11 +41,7 @@ export default function Account() {
                 <div className="list-row" key={b.id}>
                   <div>
                     <strong>{b.item.title}</strong>
-                    <p>
-                      {date(b.item.start)}
-                      <br />
-                      {b.item.location}
-                    </p>
+                    <p>{date(b.item.start)}</p>
                   </div>
                   <Action
                     className="text-button"

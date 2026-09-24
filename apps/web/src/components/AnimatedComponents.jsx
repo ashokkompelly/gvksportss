@@ -14,7 +14,7 @@ export function TrainingAssessmentWidget() {
   return (
     <div
       style={{
-        background: 'linear-gradient(155deg, #111714 0%, #080b09 100%)',
+        background: 'linear-gradient(155deg, #141414 0%, #090909 100%)',
         border: '1px solid var(--gold-border)',
         borderRadius: '20px',
         padding: '32px',
@@ -50,7 +50,7 @@ export function TrainingAssessmentWidget() {
               borderRadius: '8px',
               border: 0,
               background: activeTab === 'badminton' ? 'var(--gold-gradient)' : 'transparent',
-              color: activeTab === 'badminton' ? '#070908' : 'var(--muted-light)',
+              color: activeTab === 'badminton' ? '#080808' : 'var(--muted-light)',
               fontWeight: '700',
               fontSize: '14px',
               cursor: 'pointer',
@@ -66,7 +66,7 @@ export function TrainingAssessmentWidget() {
               borderRadius: '8px',
               border: 0,
               background: activeTab === 'chess' ? 'var(--gold-gradient)' : 'transparent',
-              color: activeTab === 'chess' ? '#070908' : 'var(--muted-light)',
+              color: activeTab === 'chess' ? '#080808' : 'var(--muted-light)',
               fontWeight: '700',
               fontSize: '14px',
               cursor: 'pointer',
@@ -127,7 +127,7 @@ export function TrainingAssessmentWidget() {
             {/* Recommendation Result */}
             <div
               style={{
-                background: 'rgba(5, 8, 7, 0.75)',
+                background: 'rgba(7, 7, 7, 0.75)',
                 borderRadius: '14px',
                 padding: '24px',
                 border: '1px solid var(--gold-border)',
@@ -219,7 +219,7 @@ export function TrainingAssessmentWidget() {
             {/* Chesslang Recommendation */}
             <div
               style={{
-                background: 'rgba(5, 8, 7, 0.75)',
+                background: 'rgba(7, 7, 7, 0.75)',
                 borderRadius: '14px',
                 padding: '24px',
                 border: '1px solid var(--gold-border)',

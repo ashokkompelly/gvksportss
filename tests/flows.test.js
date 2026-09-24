@@ -73,7 +73,10 @@ test('Complete access, content, booking and membership flow', async () => {
       ).status,
       200,
     );
-    assert.equal((await request('/admin/users/' + managed.data.id, 'DELETE', null, ac)).status, 200);
+    assert.equal(
+      (await request('/admin/users/' + managed.data.id, 'DELETE', null, ac)).status,
+      200,
+    );
     const start = new Date(Date.now() + 86400000).toISOString(),
       end = new Date(Date.now() + 90000000).toISOString();
     const slot = await request(
@@ -133,6 +136,7 @@ test('Complete access, content, booking and membership flow', async () => {
       'POST',
       {
         title: 'Members tournament',
+        image: '/members-tournament.jpg',
         sport: 'Chess',
         description: 'Test event description',
         start,

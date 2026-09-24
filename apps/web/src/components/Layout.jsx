@@ -18,6 +18,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from './ui';
 import SiteNavLink from './SiteNavLink';
+import LaunchExperience from './LaunchExperience';
 import { pageDefaults, mergeContent, visibleItems } from '../../../../shared/siteContent';
 
 const navIcons = {
@@ -35,7 +36,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const [error, setError] = useState('');
   const [scrolled, setScrolled] = useState(false);
-  const { data: pages } = useData('/catalog/pages');
+  const { data: pages, error: pagesError } = useData('/catalog/pages');
   const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
   const headerPage = pages?.find((page) => page.slug === 'header');
@@ -44,6 +45,8 @@ export default function Layout() {
     : pages === null
       ? pageDefaults.header.config
       : null;
+  const home = pages?.find((page) => page.slug === 'home');
+  const launch = home ? mergeContent(pageDefaults.home.config.launch, home.config?.launch) : null;
   const brand = header?.brand;
   const account = header?.account;
   const menus = header?.navigation.enabled
@@ -67,6 +70,14 @@ export default function Layout() {
 
   return (
     <>
+      {location.pathname === '/' && (
+        <LaunchExperience
+          settings={launch}
+          brand={brand || pageDefaults.header.config.brand}
+          loading={pages === null && !pagesError}
+          replay={new URLSearchParams(location.search).get('launch') === '1'}
+        />
+      )}
       {header && (
         <header className={`header managed-header${scrolled ? ' scrolled' : ''}`}>
           <SiteNavLink

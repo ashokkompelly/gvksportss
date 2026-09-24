@@ -6,6 +6,17 @@ export const pageDefaults = {
     body: 'GVK Sportss organises chess tournaments for schools, gated communities and corporates. From planning to tournament day, we help turn your ideas into a memorable sporting experience.',
     published: true,
     config: {
+      launch: {
+        enabled: true,
+        eyebrow: 'THE GRAND OPENING',
+        title: 'A new arena.\nA new beginning.',
+        description: 'The stage is set. Join us as we open the doors to GVK Sportss.',
+        tagline: 'PLAY. LEARN. GROW.',
+        buttonLabel: 'Launch Website',
+        skipLabel: 'Enter website',
+        countdownLabel: 'THE MOMENT IS HERE',
+        welcomeLabel: 'WELCOME TO GVK SPORTSS',
+      },
       hero: {
         enabled: true,
         captionLabel: 'THE GVK EVENT EXPERIENCE',

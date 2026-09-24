@@ -1,6 +1,11 @@
 import ImageUpload from './ImageUpload';
 const labels = {
   header: 'Header & navigation',
+  launch: 'Launch screen',
+  buttonLabel: 'Launch button label',
+  skipLabel: 'Enter website link label',
+  countdownLabel: 'Countdown caption',
+  welcomeLabel: 'Welcome caption',
   brand: 'Logo & brand',
   tagline: 'Brand tagline',
   navigation: 'Navigation menus',

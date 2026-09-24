@@ -30,6 +30,18 @@ export default function Home() {
   const events = useData('/catalog/events');
   const [heroSlide, setHeroSlide] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [launchActive, setLaunchActive] = useState(false);
+  useEffect(() => {
+    const reset = () => setHeroSlide(0);
+    const visibility = (event) => setLaunchActive(event.detail);
+    setLaunchActive(!!document.querySelector('.launch-experience[open]'));
+    window.addEventListener('gvk:launch-complete', reset);
+    window.addEventListener('gvk:launch-visibility', visibility);
+    return () => {
+      window.removeEventListener('gvk:launch-complete', reset);
+      window.removeEventListener('gvk:launch-visibility', visibility);
+    };
+  }, []);
   const slides = visibleItems(content?.hero.slides);
   const activeIndex = slides.length ? heroSlide % slides.length : 0;
   const slide = slides[activeIndex];
@@ -42,6 +54,7 @@ export default function Home() {
   useEffect(() => {
     if (
       paused ||
+      launchActive ||
       !content?.hero.enabled ||
       slides.length < 2 ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -52,7 +65,7 @@ export default function Home() {
       7000,
     );
     return () => window.clearInterval(timer);
-  }, [paused, slides.length, content?.hero.enabled]);
+  }, [paused, launchActive, slides.length, content?.hero.enabled]);
   if (!page)
     return (
       <section className="section">

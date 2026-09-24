@@ -670,3 +670,15 @@ if (!db.prepare('SELECT 1 FROM migrations WHERE version=17').get())
     }
     db.prepare('INSERT INTO migrations(version) VALUES(17)').run();
   });
+
+// Enable the launch ceremony without replacing existing homepage content.
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=18').get())
+  transaction(() => {
+    for (const row of db.prepare("SELECT id,data FROM resources WHERE kind='pages'").all()) {
+      const page = JSON.parse(row.data);
+      if (page.slug !== 'home') continue;
+      page.config.launch ??= structuredClone(pageDefaults.home.config.launch);
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(page), row.id);
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(18)').run();
+  });

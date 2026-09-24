@@ -225,6 +225,16 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
           <p>Choose a component below, then edit it in a popup.</p>
         </div>
         <div className="actions">
+          {item.slug === 'home' && (
+            <Link
+              className="button gold small"
+              to="/?launch=1"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Preview launch
+            </Link>
+          )}
           <Link
             className="button outline small"
             target="_blank"
@@ -326,6 +336,13 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
                   Edit {labelFor(key).toLowerCase()}
                 </button>
               </div>
+              {key === 'launch' && (
+                <p className="muted">
+                  A five-second countdown and curtain reveal, shown once per browser tab. Use
+                  Preview launch to rehearse. Turn off Show this section after your launch event.
+                  The logo comes from Header & navigation.
+                </p>
+              )}
               <AdminPreview value={value} />
               {Object.entries(template)
                 .filter(

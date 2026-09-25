@@ -27,6 +27,22 @@ export function transaction(fn) {
     throw e;
   }
 }
+// Rebuild the legacy member-only table once, preserving registration IDs and dates.
+if (
+  !db
+    .prepare('PRAGMA table_info(registrations)')
+    .all()
+    .some((column) => column.name === 'phone')
+) {
+  transaction(() =>
+    db.exec(`
+    CREATE TABLE registrations_next(id INTEGER PRIMARY KEY,user_id INTEGER REFERENCES users(id),event_id INTEGER NOT NULL REFERENCES resources(id),name TEXT,phone TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(user_id,event_id),UNIQUE(event_id,phone));
+    INSERT INTO registrations_next(id,user_id,event_id,created_at) SELECT id,user_id,event_id,created_at FROM registrations;
+    DROP TABLE registrations;
+    ALTER TABLE registrations_next RENAME TO registrations;
+  `),
+  );
+}
 export function resource(id, kind) {
   const row = db.prepare('SELECT * FROM resources WHERE id=? AND kind=?').get(id, kind);
   return row ? { id: row.id, ...JSON.parse(row.data) } : null;

@@ -83,7 +83,7 @@ export default function Layout() {
           <SiteNavLink
             href={brand.href}
             newTab={brand.newTab}
-            className="brand"
+            className="brand brand-with-tagline"
             aria-label={brand.name || brand.alt}
           >
             {brand.showLogo && brand.image && (
@@ -100,7 +100,7 @@ export default function Layout() {
             {(brand.showName || brand.showTagline) && (
               <div className="brand-text">
                 {brand.showName && <strong>{brand.name}</strong>}
-                {brand.showTagline && <small>{brand.tagline}</small>}
+                {brand.showTagline && <small className="brand-tagline">{brand.tagline}</small>}
               </div>
             )}
           </SiteNavLink>
@@ -171,7 +171,7 @@ export default function Layout() {
           <div className="footer-top">
             {/* Brand Col */}
             <div className="footer-brand">
-              <Link to="/" className="brand">
+              <Link to="/" className="brand brand-with-tagline">
                 <img
                   src={brand?.image || pageDefaults.header.config.brand.image}
                   alt={brand?.alt || footer.brandName}
@@ -180,7 +180,7 @@ export default function Layout() {
                 />
                 <div className="brand-text">
                   <strong style={{ fontSize: '20px' }}>{footer.brandName}</strong>
-                  <small>{footer.brandTagline}</small>
+                  <small className="brand-tagline">{footer.brandTagline}</small>
                 </div>
               </Link>
               <p>{footer.brandDescription}</p>

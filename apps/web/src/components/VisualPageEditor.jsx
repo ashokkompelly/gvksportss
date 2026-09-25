@@ -285,6 +285,33 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
           <AdminPreview value={page.config} kind="header" />
         </section>
       )}
+      {item.slug === 'home' && (
+        <section className="visual-section launch-control">
+          <div>
+            <h3>Launch screen</h3>
+            <p>
+              Show the opening experience once per browser tab session. Turning it off takes
+              visitors straight to the website.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={page.config.launch.enabled}
+            aria-label="Launch screen"
+            className="launch-toggle"
+            disabled={busy}
+            onClick={() =>
+              persist(write(page, ['config', 'launch', 'enabled'], !page.config.launch.enabled))
+            }
+          >
+            <span className="launch-toggle-track" aria-hidden="true">
+              <span />
+            </span>
+            {page.config.launch.enabled ? 'Active' : 'Inactive'}
+          </button>
+        </section>
+      )}
       <section className="visual-section">
         <div className="visual-toolbar">
           <span className="badge">{page.published ? 'Published page' : 'Hidden page'}</span>
@@ -338,9 +365,10 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
               </div>
               {key === 'launch' && (
                 <p className="muted">
-                  A five-second countdown and curtain reveal, shown once per browser tab. Use
-                  Preview launch to rehearse. Turn off Show this section after your launch event.
-                  The logo comes from Header & navigation.
+                  A five-second countdown and curtain reveal, shown once per browser tab session.
+                  Refreshing will not replay it. Use Preview launch to rehearse, even when the
+                  launch screen is inactive. Use the Launch screen toggle above to activate or
+                  deactivate it. The logo comes from Header & navigation.
                 </p>
               )}
               <AdminPreview value={value} />

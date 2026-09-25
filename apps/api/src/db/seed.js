@@ -1,4 +1,4 @@
-import { pageDefaults, mergeContent } from '../../../../shared/siteContent.js';
+import { pageDefaults, mergeContent, brandTagline } from '../../../../shared/siteContent.js';
 import { eventExperience } from '../../../../shared/eventExperience.js';
 import { db, transaction } from './index.js';
 if (!db.prepare('SELECT 1 FROM migrations WHERE version=1').get())
@@ -681,4 +681,30 @@ if (!db.prepare('SELECT 1 FROM migrations WHERE version=18').get())
       db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(page), row.id);
     }
     db.prepare('INSERT INTO migrations(version) VALUES(18)').run();
+  });
+
+// Apply the official tagline to existing branding and selected hero slides once.
+if (!db.prepare('SELECT 1 FROM migrations WHERE version=19').get())
+  transaction(() => {
+    for (const row of db.prepare("SELECT id,data FROM resources WHERE kind='pages'").all()) {
+      const page = JSON.parse(row.data);
+      if (!['header', 'footer', 'home'].includes(page.slug)) continue;
+      page.config ??= {};
+      if (page.slug === 'header') {
+        page.config.brand ??= structuredClone(pageDefaults.header.config.brand);
+        page.config.brand.tagline = brandTagline;
+        page.config.brand.showTagline = true;
+      } else if (page.slug === 'footer') {
+        page.config.brandTagline = brandTagline;
+      } else {
+        page.config.launch ??= structuredClone(pageDefaults.home.config.launch);
+        page.config.launch.tagline = brandTagline;
+        for (const [index, slide] of (page.config.hero?.slides || []).entries()) {
+          slide.tagline = index === 0 || index === 2 ? brandTagline : '';
+          if (slide.title === 'PLAY, Learn, Grow') slide.title = 'Your game. Your community.';
+        }
+      }
+      db.prepare('UPDATE resources SET data=? WHERE id=?').run(JSON.stringify(page), row.id);
+    }
+    db.prepare('INSERT INTO migrations(version) VALUES(19)').run();
   });

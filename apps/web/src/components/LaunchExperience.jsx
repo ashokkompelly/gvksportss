@@ -3,11 +3,20 @@ import { createPortal } from 'react-dom';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 
 const sessionKey = 'gvk-launch-seen-v1';
+let seenInPage = false;
 function alreadyLaunched() {
   try {
-    return sessionStorage.getItem(sessionKey) === 'yes';
+    return seenInPage || sessionStorage.getItem(sessionKey) === 'yes';
   } catch {
-    return false;
+    return seenInPage;
+  }
+}
+function rememberLaunch() {
+  seenInPage = true;
+  try {
+    sessionStorage.setItem(sessionKey, 'yes');
+  } catch {
+    /* Keep the in-memory fallback when browser storage is unavailable. */
   }
 }
 
@@ -19,7 +28,7 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
   const viewport = useRef(null);
   const content = useRef(null);
   const deadline = useRef(0);
-  const visible = !done && (loading || (settings && (settings.enabled || replay)));
+  const visible = !done && !loading && settings && (settings.enabled || replay);
   useLayoutEffect(() => {
     if (!visible) return;
     const stage = viewport.current;
@@ -39,11 +48,7 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
     return () => observer.disconnect();
   }, [visible, loading, phase, settings, brand]);
   const complete = useCallback(() => {
-    try {
-      sessionStorage.setItem(sessionKey, 'yes');
-    } catch {
-      /* Session storage may be unavailable. */
-    }
+    rememberLaunch();
     setDone(true);
     window.dispatchEvent(new Event('gvk:launch-complete'));
     requestAnimationFrame(() => {
@@ -59,6 +64,8 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
     if (!visible) return;
     const node = dialog.current;
     if (!node.open) node.showModal();
+    // Count the first display, including visitors who refresh before completing it.
+    rememberLaunch();
     window.dispatchEvent(new CustomEvent('gvk:launch-visibility', { detail: true }));
     return () => {
       node.close();
@@ -123,6 +130,7 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
                 <img src={brand.image} alt={brand.alt || brand.name || 'GVK Sportss'} />
               )}
             </div>
+            {!loading && <p className="launch-tagline">{settings.tagline}</p>}
             {loading ? (
               <p className="launch-eyebrow" role="status">
                 Preparing your front-row seat…
@@ -161,7 +169,6 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
                     </div>
                   )}
                 </div>
-                <p className="launch-tagline">{settings.tagline}</p>
               </>
             )}
           </div>

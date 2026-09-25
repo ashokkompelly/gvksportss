@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Heading, useData, State, Empty, Notice, Action } from '../components/ui';
-import { api, date } from '../lib/api';
+import { Link } from 'react-router-dom';
+import { Heading, useData, State, Empty } from '../components/ui';
+import { date } from '../lib/api';
 import { usePageContent } from '../lib/content';
-import { useAuth } from '../contexts/AuthContext';
+import EventRegistration from '../components/EventRegistration';
 export default function Events() {
   const pageState = usePageContent('events');
   const { page, content } = pageState;
-  const { data, error, reload } = useData('/catalog/events'),
-    { user } = useAuth(),
-    navigate = useNavigate();
-  const [past, setPast] = useState(false),
-    [message, setMessage] = useState('');
+  const { data, error, reload } = useData('/catalog/events');
+  const [past, setPast] = useState(false);
   const items = data?.filter((e) => new Date(e.start) <= new Date() === past);
   if (!page)
     return (
@@ -43,7 +40,6 @@ export default function Events() {
           {content.pastLabel}
         </button>
       </div>
-      <Notice message={message} />
       <State data={data} error={error}>
         {!items?.length && <Empty>{past ? content.emptyPast : content.emptyUpcoming}</Empty>}
         <div className="grid two">
@@ -60,26 +56,8 @@ export default function Events() {
               <h2>{e.title}</h2>
               <p>{e.description}</p>
               <p>{date(e.start)}</p>
-              {!past && (
-                <div className="card-bottom">
-                  <span>{e.remaining} places left</span>
-                  <Action
-                    disabled={e.remaining < 1}
-                    onClick={async () => {
-                      if (!user) return navigate('/login');
-                      try {
-                        await api('/member/registrations', { method: 'POST', body: { id: e.id } });
-                        setMessage('You’re registered. View your event in My GVK.');
-                        reload();
-                      } catch (e) {
-                        setMessage(e.message);
-                      }
-                    }}
-                  >
-                    {content.registerLabel}
-                  </Action>
-                </div>
-              )}
+              {!past && <p>{e.remaining} places left</p>}
+              <EventRegistration event={e} onRegistered={reload} />
             </article>
           ))}
         </div>

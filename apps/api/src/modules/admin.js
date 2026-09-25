@@ -6,6 +6,7 @@ import { db, resource, resources, audit, transaction } from '../db/index.js';
 import { authenticated, admin as requireAdmin, hashPassword } from './auth.js';
 import { managedSlugs } from '../../../../shared/siteContent.js';
 import { schemas, parse, fail, id } from './schemas.js';
+import { registrationDetails } from './registrations.js';
 export const admin = Router();
 admin.use(authenticated, requireAdmin);
 admin.post(
@@ -48,12 +49,33 @@ admin.get('/overview', (req, res) =>
       .map((r) => ({ ...r, item: JSON.parse(r.data), data: undefined })),
     registrations: db
       .prepare(
-        'SELECT b.id,u.name,u.email,r.data FROM registrations b JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.event_id',
+        'SELECT b.id,b.event_id,COALESCE(b.name,u.name) AS name,b.phone,b.created_at,u.email,r.data FROM registrations b LEFT JOIN users u ON u.id=b.user_id JOIN resources r ON r.id=b.event_id ORDER BY b.id DESC',
       )
       .all()
       .map((r) => ({ ...r, item: JSON.parse(r.data), data: undefined })),
   }),
 );
+admin.patch('/registrations/:id', (req, res) => {
+  const target = id(req.params.id);
+  const details = parse(registrationDetails, req.body);
+  transaction(() => {
+    const current = db.prepare('SELECT * FROM registrations WHERE id=?').get(target);
+    if (!current) fail(404, 'Registration not found.');
+    if (
+      db
+        .prepare('SELECT 1 FROM registrations WHERE event_id=? AND phone=? AND id<>?')
+        .get(current.event_id, details.phone, target)
+    )
+      fail(409, 'This phone number is already registered for this event.');
+    db.prepare('UPDATE registrations SET name=?,phone=? WHERE id=?').run(
+      details.name,
+      details.phone,
+      target,
+    );
+    audit(req.user, 'registration:update', target);
+  });
+  res.json({ ok: true });
+});
 admin.patch('/memberships/:id', (req, res) => {
   const v = parse(z.object({ status: z.enum(['active', 'cancelled']) }), req.body);
   transaction(() => {

@@ -1,3 +1,5 @@
+export const brandTagline = "Just play Don't stop";
+
 // Shared defaults seed persisted page content and define the admin form structure.
 export const pageDefaults = {
   home: {
@@ -11,7 +13,7 @@ export const pageDefaults = {
         eyebrow: 'THE GRAND OPENING',
         title: 'A new arena.\nA new beginning.',
         description: 'The stage is set. Join us as we open the doors to GVK Sportss.',
-        tagline: 'PLAY. LEARN. GROW.',
+        tagline: brandTagline,
         buttonLabel: 'Launch Website',
         skipLabel: 'Enter website',
         countdownLabel: 'THE MOMENT IS HERE',
@@ -32,9 +34,10 @@ export const pageDefaults = {
         slides: [
           {
             id: 'gvk-brand-intro',
+            tagline: brandTagline,
             published: true,
             label: 'GVK SPORTSS · SPORTS EVENT MANAGEMENT COMPANY',
-            title: 'PLAY, Learn, Grow',
+            title: 'Your game. Your community.',
             description:
               'Bringing people together through chess and badminton. Explore our events for schools, gated communities and corporates, alongside personal chess training and certified badminton coaching.',
             image: '/logo.jpg',
@@ -52,6 +55,7 @@ export const pageDefaults = {
             alt: 'Chess pieces arranged on a board for play',
             caption: 'Schools. Gated communities. Corporates.',
             id: 'slide-0',
+            tagline: '',
             published: true,
             containImage: false,
           },
@@ -65,6 +69,7 @@ export const pageDefaults = {
             alt: 'Chess players studying a position across the board',
             caption: 'Personal chess training. Free demo session available.',
             id: 'slide-1',
+            tagline: brandTagline,
             published: true,
             containImage: false,
           },
@@ -78,6 +83,7 @@ export const pageDefaults = {
             alt: 'Badminton court prepared for play',
             caption: 'Badminton events and certified coaching.',
             id: 'slide-2',
+            tagline: '',
             published: true,
             containImage: false,
           },

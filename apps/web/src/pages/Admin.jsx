@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AdminModal from '../components/AdminModal';
+import { RegistrationDetailsForm } from '../components/EventRegistration';
 import AdminPreview from '../components/AdminPreview';
 import ImageUpload from '../components/ImageUpload';
 import PageContentManager, { PageContentEditor } from '../components/PageContentEditor';
@@ -394,7 +395,7 @@ function FooterManager() {
                     alt=""
                   />
                   <h3>{footer.brandName}</h3>
-                  <span className="eyebrow">{footer.brandTagline}</span>
+                  <span className="brand-tagline">{footer.brandTagline}</span>
                   <p>{footer.brandDescription}</p>
                   <span className="footer-instagram-link">@{footer.instagramHandle}</span>
                   <span className="button outline small">{footer.whatsappLabel}</span>
@@ -675,6 +676,8 @@ function MemberManager() {
 }
 function Overview() {
   const { data, error, reload } = useData('/admin/overview');
+  const [editingRegistration, setEditingRegistration] = useState(null);
+  const [registrationSearch, setRegistrationSearch] = useState('');
   return (
     <State data={data} error={error}>
       <h2>Academy overview</h2>
@@ -753,44 +756,103 @@ function Overview() {
       ].map(([key, label]) => (
         <div key={key}>
           <h2 className="spaced">{label}</h2>
+          {key === 'registrations' && (
+            <label className="field">
+              <span>Search registrations by event name/ID, name or phone</span>
+              <input
+                type="search"
+                value={registrationSearch}
+                onChange={(event) => setRegistrationSearch(event.target.value)}
+              />
+            </label>
+          )}
           {!data?.[key].length && <Empty>No records yet.</Empty>}
-          {data?.[key].map((row) => (
-            <div className="list-row" key={row.id}>
-              <div>
-                <strong>{row.name}</strong>
-                <p>{row.email}</p>
-              </div>
-              <div>
-                {row.item ? (
-                  <>
-                    <strong>{row.item.title}</strong>
-                    <p>{date(row.item.start)}</p>
-                  </>
-                ) : (
-                  row.role
+          {data?.[key]
+            .filter(
+              (row) =>
+                key !== 'registrations' ||
+                [row.name, row.phone, row.item?.title, row.event_id]
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(registrationSearch.toLowerCase()),
+            )
+            .map((row) => (
+              <div className="list-row" key={row.id}>
+                <div>
+                  <strong>{row.name}</strong>
+                  <p>{row.email}</p>
+                  {key === 'registrations' && (
+                    <p>
+                      {row.phone ? (
+                        <a href={'tel:' + row.phone}>{row.phone}</a>
+                      ) : (
+                        'Phone not recorded'
+                      )}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  {row.item ? (
+                    <>
+                      <strong>{row.item.title}</strong>
+                      <p>{date(row.item.start)}</p>
+                      {key === 'registrations' && (
+                        <>
+                          <p>Event ID: {row.event_id}</p>
+                          <p>Registered: {date(row.created_at.replace(' ', 'T') + 'Z')}</p>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    row.role
+                  )}
+                </div>
+                {['bookings', 'registrations'].includes(key) && (
+                  <Action
+                    className="text-button danger"
+                    onClick={async () => {
+                      if (!window.confirm('Cancel this reservation?')) return;
+                      try {
+                        await api('/admin/' + key + '/' + row.id, { method: 'DELETE' });
+
+                        reload();
+                      } catch {
+                        // The API displays a persistent error notification.
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Action>
+                )}
+                {key === 'registrations' && (
+                  <button className="button outline" onClick={() => setEditingRegistration(row)}>
+                    Edit details
+                  </button>
                 )}
               </div>
-              {['bookings', 'registrations'].includes(key) && (
-                <Action
-                  className="text-button danger"
-                  onClick={async () => {
-                    if (!window.confirm('Cancel this reservation?')) return;
-                    try {
-                      await api('/admin/' + key + '/' + row.id, { method: 'DELETE' });
-
-                      reload();
-                    } catch {
-                      // The API displays a persistent error notification.
-                    }
-                  }}
-                >
-                  Cancel
-                </Action>
-              )}
-            </div>
-          ))}
+            ))}
         </div>
       ))}
+      {editingRegistration && (
+        <AdminModal
+          title={'Edit registration: ' + editingRegistration.item.title}
+          onClose={() => setEditingRegistration(null)}
+        >
+          <RegistrationDetailsForm
+            initial={editingRegistration}
+            submitLabel="Save details"
+            onCancel={() => setEditingRegistration(null)}
+            onSave={async (details) => {
+              await api('/admin/registrations/' + editingRegistration.id, {
+                method: 'PATCH',
+                body: details,
+              });
+              setEditingRegistration(null);
+              reload();
+            }}
+          />
+        </AdminModal>
+      )}
     </State>
   );
 }

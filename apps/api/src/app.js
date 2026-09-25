@@ -7,6 +7,7 @@ import { session, auth } from './modules/auth.js';
 import { catalog, enquiries } from './modules/catalog.js';
 import { member } from './modules/member.js';
 import { admin } from './modules/admin.js';
+import { registrations } from './modules/registrations.js';
 export const app = express();
 app.disable('x-powered-by');
 app.use(
@@ -40,6 +41,7 @@ app.use('/api/catalog', catalog);
 app.use('/api/member', member);
 app.use('/api/admin', admin);
 app.use('/api/enquiries', enquiries);
+app.use('/api/registrations', registrations);
 app.use(
   '/uploads',
   express.static(config.uploads, {

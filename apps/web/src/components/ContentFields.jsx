@@ -115,11 +115,13 @@ export function Fields({ value, template, onChange, onItemAdded, path = 'config'
     .map(([key, sample]) => {
       const current = value[key] ?? sample;
       const label =
-        path === 'config.navigation' && key === 'items'
-          ? 'Menu items'
-          : path === 'config.brand' && key === 'name'
-            ? 'Brand name'
-            : labelFor(key);
+        path === 'config.launch' && key === 'enabled'
+          ? 'Activate launch screen'
+          : path === 'config.navigation' && key === 'items'
+            ? 'Menu items'
+            : path === 'config.brand' && key === 'name'
+              ? 'Brand name'
+              : labelFor(key);
       const fieldPath = path + '.' + key;
       const update = (next) => onChange({ ...value, [key]: next });
       if (Array.isArray(sample)) {

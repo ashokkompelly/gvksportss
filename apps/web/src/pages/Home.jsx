@@ -4,6 +4,7 @@ import { ArrowUpRight, Users, Building2, Trophy, Pause, Play, School } from 'luc
 import { useData, State, Empty } from '../components/ui';
 import { usePageContent } from '../lib/content';
 import { visibleItems } from '../../../../shared/siteContent';
+import EventRegistration from '../components/EventRegistration';
 
 const icons = { trophy: Trophy, building: Building2, users: Users, school: School };
 function ButtonLink({ action, className = 'button gold' }) {
@@ -89,6 +90,7 @@ export default function Home() {
                 >
                   <span className="eyebrow">{item.label}</span>
                   <h1>{item.title}</h1>
+                  {item.tagline && <p className="hero-brand-tagline">{item.tagline}</p>}
                   <p>{item.description}</p>
                 </div>
               ))}
@@ -124,6 +126,9 @@ export default function Home() {
                   >
                     <span>{hero.captionLabel}</span>
                     <strong>{item.caption}</strong>
+                    {item.containImage && item.tagline && (
+                      <span className="hero-logo-tagline">{item.tagline}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -228,7 +233,11 @@ export default function Home() {
                     dateStyle: 'medium',
                   })}
                 </div>
-                <ButtonLink action={calendar.eventAction} />
+                <EventRegistration
+                  key={featuredEvent.id}
+                  event={featuredEvent}
+                  onRegistered={events.reload}
+                />
               </div>
             </div>
           ) : (

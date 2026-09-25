@@ -4471,3 +4471,46 @@ body:has(.launch-experience[open]) #root {
   letter-spacing: 0.5px;
   text-transform: none;
 }
+
+.trainer-profile.with-photo {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.65fr) minmax(0, 1.35fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.trainer-profile-copy {
+  min-width: 0;
+}
+
+.trainer-photo {
+  overflow: hidden;
+  border: 1px solid var(--gold-border-hover);
+  border-radius: 18px;
+  background: var(--bg-surface);
+  box-shadow: 0 12px 32px #0004;
+}
+
+.trainer-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center top;
+}
+
+@media (max-width: 1100px) {
+  .trainer-profile.with-photo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trainer-photo {
+    width: min(100%, 300px);
+  }
+}
+
+@media (max-width: 760px) {
+  .trainer-photo {
+    justify-self: center;
+  }
+}

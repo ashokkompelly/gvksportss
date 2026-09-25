@@ -681,10 +681,9 @@ function Overview() {
   return (
     <State data={data} error={error}>
       <h2>Academy overview</h2>
-      <div className="grid three">
+      <div className="grid two">
         {[
           ['Members', data?.users.filter((u) => u.role === 'member').length],
-          ['Coaching bookings', data?.bookings.length],
           ['Event registrations', data?.registrations.length],
         ].map(([l, v]) => (
           <div className="card metric" key={l}>
@@ -693,64 +692,7 @@ function Overview() {
           </div>
         ))}
       </div>
-      <h2 className="spaced">Membership requests</h2>
-      <p>Activate only after your team confirms the agreed fee and membership terms.</p>
-      {!data?.memberships.length && <Empty>No membership requests yet.</Empty>}
-      {data?.memberships.map((m) => (
-        <article className="card list-row" key={m.id}>
-          <div>
-            <strong>
-              {m.name} · {m.plan}
-            </strong>
-            <p>
-              {m.email} · {m.status}
-              {m.valid_until ? ' · Until ' + date(m.valid_until) : ''}
-            </p>
-          </div>
-          <div className="actions">
-            {(m.status === 'pending'
-              ? ['active', 'cancelled']
-              : m.status === 'active'
-                ? ['cancelled']
-                : []
-            ).map((status) => (
-              <Action
-                key={status}
-                className="button outline small"
-                onClick={async () => {
-                  if (
-                    !window.confirm(
-                      status === 'active' ? 'Activate this membership?' : 'Cancel this membership?',
-                    )
-                  )
-                    return;
-                  try {
-                    await api('/admin/memberships/' + m.id, { method: 'PATCH', body: { status } });
-                    reload();
-                  } catch {
-                    // The API displays a persistent error notification.
-                  }
-                }}
-              >
-                {status === 'active' ? 'Activate' : 'Cancel'}
-              </Action>
-            ))}
-          </div>
-        </article>
-      ))}
-      <h2 className="spaced">Enquiries</h2>
-      {!data?.enquiries.length && <Empty>No enquiries yet.</Empty>}
-      {data?.enquiries.map((e) => (
-        <article className="card" key={e.id}>
-          <h3>
-            {e.name} {e.organization && '· ' + e.organization}
-          </h3>
-          <p>{e.email}</p>
-          <p className="prose">{e.message}</p>
-        </article>
-      ))}
       {[
-        ['bookings', 'Coaching bookings'],
         ['registrations', 'Event registrations'],
         ['users', 'Accounts'],
       ].map(([key, label]) => (
@@ -807,7 +749,7 @@ function Overview() {
                     row.role
                   )}
                 </div>
-                {['bookings', 'registrations'].includes(key) && (
+                {key === 'registrations' && (
                   <Action
                     className="text-button danger"
                     onClick={async () => {

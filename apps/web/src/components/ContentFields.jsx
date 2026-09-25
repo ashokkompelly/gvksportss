@@ -269,7 +269,13 @@ export function Fields({ value, template, onChange, onItemAdded, path = 'config'
             key={key}
             value={current}
             onChange={update}
-            label={path === 'config.brand' ? 'Logo' : 'Image'}
+            label={
+              path === 'config.brand'
+                ? 'Logo'
+                : path === 'config.training'
+                  ? 'Trainer photo'
+                  : 'Image'
+            }
           />
         );
       const long =

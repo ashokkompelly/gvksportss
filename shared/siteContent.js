@@ -293,6 +293,8 @@ export const pageDefaults = {
         description: '',
         badge: 'Free demo session available',
         trainerTitle: 'Train with Gajula Vamshi Krishna',
+        image: '',
+        imageAlt: 'Gajula Vamshi Krishna, personal chess trainer',
         paragraphs: [
           'Founder of GVK Sportss and a personal chess trainer, Gajula Vamshi Krishna brings chess learning and sporting events together. His training through the Chesslang platform helps learners explore the game with personal guidance.',
           'Choose online chess coaching, workshops or school programmes, and start with a free demo session.',

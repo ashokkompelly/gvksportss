@@ -276,14 +276,25 @@ export default function Home() {
             <span className="badge">{training.badge}</span>
           </SectionTitle>
           <div className="chess-training-grid">
-            <div>
-              <h3>{training.trainerTitle}</h3>
-              {training.paragraphs.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-              <div className="actions">
-                <ButtonLink action={training.primaryAction} />
-                <ButtonLink action={training.secondaryAction} className="light-link" />
+            <div className={`trainer-profile${training.image ? ' with-photo' : ''}`}>
+              {training.image && (
+                <div className="trainer-photo">
+                  <img
+                    src={training.image}
+                    alt={training.imageAlt || training.trainerTitle}
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <div className="trainer-profile-copy">
+                <h3>{training.trainerTitle}</h3>
+                {training.paragraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+                <div className="actions">
+                  <ButtonLink action={training.primaryAction} />
+                  <ButtonLink action={training.secondaryAction} className="light-link" />
+                </div>
               </div>
             </div>
             <div className="training-platform">

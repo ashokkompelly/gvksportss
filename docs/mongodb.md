@@ -114,3 +114,5 @@ The application uses a shared write lock inside MongoDB transactions to preserve
 capacity checks and linked-record rules across server instances. Writes are
 serialized, which suits this small application; it is not optimized for heavy
 write traffic. Rate limits remain per server process.
+
+During an outage the SQLite snapshot remains available while the server retries MongoDB every 30 seconds. Recovery finishes migrations and verifies access before switching back. Failed writes are never replayed against another database. A recovered database restores sign-in and admin changes without a server restart.

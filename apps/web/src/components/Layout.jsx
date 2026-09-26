@@ -37,7 +37,6 @@ export default function Layout() {
   const [error, setError] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const { data: pages, error: pagesError } = useData('/catalog/pages');
-  const { data: availability } = useData('/health');
   const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
   const headerPage = pages?.find((page) => page.slug === 'header');
@@ -164,12 +163,6 @@ export default function Layout() {
       )}
 
       <main>
-        {availability?.readOnly && (
-          <p className="notice" role="status">
-            You can browse our website. Online bookings, sign-in and enquiries are temporarily
-            unavailable. Please contact us directly.
-          </p>
-        )}
         <Outlet />
       </main>
 

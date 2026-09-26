@@ -1,3 +1,5 @@
+export const brandTagline = "Just play Don't stop";
+
 // Shared defaults seed persisted page content and define the admin form structure.
 export const pageDefaults = {
   home: {
@@ -6,6 +8,17 @@ export const pageDefaults = {
     body: 'GVK Sportss organises chess tournaments for schools, gated communities and corporates. From planning to tournament day, we help turn your ideas into a memorable sporting experience.',
     published: true,
     config: {
+      launch: {
+        enabled: true,
+        eyebrow: 'THE GRAND OPENING',
+        title: 'A new arena.\nA new beginning.',
+        description: 'The stage is set. Join us as we open the doors to GVK Sportss.',
+        tagline: brandTagline,
+        buttonLabel: 'Launch Website',
+        skipLabel: 'Enter website',
+        countdownLabel: 'THE MOMENT IS HERE',
+        welcomeLabel: 'WELCOME TO GVK SPORTSS',
+      },
       hero: {
         enabled: true,
         captionLabel: 'THE GVK EVENT EXPERIENCE',
@@ -21,9 +34,10 @@ export const pageDefaults = {
         slides: [
           {
             id: 'gvk-brand-intro',
+            tagline: brandTagline,
             published: true,
             label: 'GVK SPORTSS · SPORTS EVENT MANAGEMENT COMPANY',
-            title: 'PLAY, Learn, Grow',
+            title: 'Your game. Your community.',
             description:
               'Bringing people together through chess and badminton. Explore our events for schools, gated communities and corporates, alongside personal chess training and certified badminton coaching.',
             image: '/logo.jpg',
@@ -41,6 +55,7 @@ export const pageDefaults = {
             alt: 'Chess pieces arranged on a board for play',
             caption: 'Schools. Gated communities. Corporates.',
             id: 'slide-0',
+            tagline: '',
             published: true,
             containImage: false,
           },
@@ -54,6 +69,7 @@ export const pageDefaults = {
             alt: 'Chess players studying a position across the board',
             caption: 'Personal chess training. Free demo session available.',
             id: 'slide-1',
+            tagline: brandTagline,
             published: true,
             containImage: false,
           },
@@ -67,6 +83,7 @@ export const pageDefaults = {
             alt: 'Badminton court prepared for play',
             caption: 'Badminton events and certified coaching.',
             id: 'slide-2',
+            tagline: '',
             published: true,
             containImage: false,
           },
@@ -276,6 +293,8 @@ export const pageDefaults = {
         description: '',
         badge: 'Free demo session available',
         trainerTitle: 'Train with Gajula Vamshi Krishna',
+        image: '',
+        imageAlt: 'Gajula Vamshi Krishna, personal chess trainer',
         paragraphs: [
           'Founder of GVK Sportss and a personal chess trainer, Gajula Vamshi Krishna brings chess learning and sporting events together. His training through the Chesslang platform helps learners explore the game with personal guidance.',
           'Choose online chess coaching, workshops or school programmes, and start with a free demo session.',
@@ -650,6 +669,47 @@ export const pageDefaults = {
       },
     },
   },
+};
+
+// Historical profiles are used only by the one-time team migration.
+export const initialTeamMembers = structuredClone(pageDefaults.about.config.team.members);
+export const teamMemberTemplate = { ...structuredClone(initialTeamMembers[0]), order: 0 };
+delete teamMemberTemplate.id;
+delete pageDefaults.about.config.team.members;
+
+pageDefaults.contact = {
+  slug: 'contact',
+  title: 'Great events start here.',
+  body: 'Planning a tournament, corporate sports day or community competition? Call or email our team to bring your ideas to life.',
+  published: true,
+  config: {
+    eyebrow: "LET'S TALK EVENTS",
+    defaultInterest: 'Sports event management',
+    subjectPrefix: 'GVK Sportss enquiry: ',
+    intro: {
+      eyebrow: 'YOUR NEXT EVENT',
+      title: 'One conversation. A world of possibilities.',
+      description:
+        'Share your preferred dates, sports and group size. We will help you take the next step. Personal chess training, Chesslang coaching and free demo enquiries are welcome too. We also offer badminton coaching.',
+    },
+    phone: {
+      eyebrow: 'CALL OUR TEAM',
+      title: "Let's talk through your ideas.",
+      description: 'Speak directly with our events and coaching team.',
+    },
+    email: {
+      eyebrow: 'SEND AN EMAIL',
+      title: 'Tell us what you have in mind.',
+      description: 'Send your event brief or ask us about our services.',
+    },
+  },
+};
+pageDefaults.gallery = {
+  slug: 'gallery',
+  title: 'Moments That Bring Us Together',
+  body: 'Glimpses of competitive rallies, tactical masterclasses, and championship celebrations.',
+  published: true,
+  config: { eyebrow: 'IN THE FRAME', emptyMessage: 'Photos and highlights will appear here soon.' },
 };
 
 export const managedSlugs = Object.keys(pageDefaults);

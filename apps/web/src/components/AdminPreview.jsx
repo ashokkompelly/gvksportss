@@ -14,13 +14,13 @@ export default function AdminPreview({ value = {}, kind = '' }) {
   if (kind === 'header')
     return (
       <div className="admin-header-preview">
-        <div className="brand">
+        <div className="brand brand-with-tagline">
           {data.brand.showLogo && data.brand.image && (
             <img className="brand-logo-img" src={data.brand.image} alt={data.brand.alt || ''} />
           )}
           <div className="brand-text">
             {data.brand.showName && <strong>{data.brand.name}</strong>}
-            {data.brand.showTagline && <small>{data.brand.tagline}</small>}
+            {data.brand.showTagline && <small className="brand-tagline">{data.brand.tagline}</small>}
           </div>
         </div>
         <div className="admin-menu-preview">

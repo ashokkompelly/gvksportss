@@ -108,7 +108,7 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
       add: true,
     });
   };
-  const title = item.slug === 'about' ? 'About & team' : labelFor(item.slug);
+  const title = labelFor(item.slug);
   const kindFor = (path) =>
     path.includes('members')
       ? 'team'
@@ -225,6 +225,16 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
           <p>Choose a component below, then edit it in a popup.</p>
         </div>
         <div className="actions">
+          {item.slug === 'home' && (
+            <Link
+              className="button gold small"
+              to="/?launch=1"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Preview launch
+            </Link>
+          )}
           <Link
             className="button outline small"
             target="_blank"
@@ -240,20 +250,6 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
         </div>
       </div>
       <div className="actions visual-quick-actions">
-        {item.slug === 'about' && (
-          <button
-            className="button gold"
-            onClick={() =>
-              add(
-                ['config', 'team', 'members'],
-                defaults.config.team.members[0],
-                'Add new team member',
-              )
-            }
-          >
-            Add new team member
-          </button>
-        )}
         {item.slug === 'coaching' && (
           <button
             className="button gold"
@@ -273,6 +269,33 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
       {item.slug === 'header' && (
         <section className="visual-section">
           <AdminPreview value={page.config} kind="header" />
+        </section>
+      )}
+      {item.slug === 'home' && (
+        <section className="visual-section launch-control">
+          <div>
+            <h3>Launch screen</h3>
+            <p>
+              Show the opening experience once per browser tab session. Turning it off takes
+              visitors straight to the website.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={page.config.launch.enabled}
+            aria-label="Launch screen"
+            className="launch-toggle"
+            disabled={busy}
+            onClick={() =>
+              persist(write(page, ['config', 'launch', 'enabled'], !page.config.launch.enabled))
+            }
+          >
+            <span className="launch-toggle-track" aria-hidden="true">
+              <span />
+            </span>
+            {page.config.launch.enabled ? 'Active' : 'Inactive'}
+          </button>
         </section>
       )}
       <section className="visual-section">
@@ -326,6 +349,14 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
                   Edit {labelFor(key).toLowerCase()}
                 </button>
               </div>
+              {key === 'launch' && (
+                <p className="muted">
+                  A five-second countdown and curtain reveal, shown once per browser tab session.
+                  Refreshing will not replay it. Use Preview launch to rehearse, even when the
+                  launch screen is inactive. Use the Launch screen toggle above to activate or
+                  deactivate it. The logo comes from Header & navigation.
+                </p>
+              )}
               <AdminPreview value={value} />
               {Object.entries(template)
                 .filter(

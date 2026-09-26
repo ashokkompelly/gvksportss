@@ -1,9 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import sharp from 'sharp';
-import { config } from '../config/env.js';
-import { audit } from '../db/index.js';
+import { audit, store } from '../db/index.js';
+import { saveMedia, readMedia } from '../db/media.js';
 import { fail } from './schemas.js';
 
 export async function uploadImage(req, res) {
@@ -33,10 +31,17 @@ export async function uploadImage(req, res) {
     );
   }
   const filename = randomUUID() + '.webp';
-  await mkdir(config.uploads, { recursive: true });
-  await writeFile(path.join(config.uploads, filename), result.data, { flag: 'wx' });
-  audit(req.user, 'image:upload', filename);
+  await saveMedia(store.database, filename, result.data);
+  await audit(req.user, 'image:upload', filename);
   res
     .status(201)
     .json({ url: '/uploads/' + filename, width: result.info.width, height: result.info.height });
+}
+
+export async function serveMongoImage(req, res) {
+  if (!/^\/[a-zA-Z0-9_.-]+$/.test(req.path)) return res.sendStatus(404);
+  const image = await readMedia(store.database, req.path.slice(1));
+  if (!image) return res.sendStatus(404);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.type(image.contentType).send(image.bytes);
 }

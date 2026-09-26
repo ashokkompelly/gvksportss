@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import AdminModal from '../components/AdminModal';
+import TeamManager from '../components/TeamManager';
+import { RegistrationDetailsForm } from '../components/EventRegistration';
 import AdminPreview from '../components/AdminPreview';
 import ImageUpload from '../components/ImageUpload';
 import PageContentManager, { PageContentEditor } from '../components/PageContentEditor';
@@ -394,7 +396,7 @@ function FooterManager() {
                     alt=""
                   />
                   <h3>{footer.brandName}</h3>
-                  <span className="eyebrow">{footer.brandTagline}</span>
+                  <span className="brand-tagline">{footer.brandTagline}</span>
                   <p>{footer.brandDescription}</p>
                   <span className="footer-instagram-link">@{footer.instagramHandle}</span>
                   <span className="button outline small">{footer.whatsappLabel}</span>
@@ -465,7 +467,7 @@ function ContentManager({ kind, initiallyCreate = false }) {
       )}
       {kind === 'pages' && (
         <p>
-          Use Home, About & team, Coaching page and Events page to edit the live sections. Event
+          Use the page editors to edit live sections and Team members to manage profiles. Event
           listings are managed separately under Events. Extra pages are accessible at
           /pages/your-slug.
         </p>
@@ -675,13 +677,14 @@ function MemberManager() {
 }
 function Overview() {
   const { data, error, reload } = useData('/admin/overview');
+  const [editingRegistration, setEditingRegistration] = useState(null);
+  const [registrationSearch, setRegistrationSearch] = useState('');
   return (
     <State data={data} error={error}>
       <h2>Academy overview</h2>
-      <div className="grid three">
+      <div className="grid two">
         {[
           ['Members', data?.users.filter((u) => u.role === 'member').length],
-          ['Coaching bookings', data?.bookings.length],
           ['Event registrations', data?.registrations.length],
         ].map(([l, v]) => (
           <div className="card metric" key={l}>
@@ -690,107 +693,109 @@ function Overview() {
           </div>
         ))}
       </div>
-      <h2 className="spaced">Membership requests</h2>
-      <p>Activate only after your team confirms the agreed fee and membership terms.</p>
-      {!data?.memberships.length && <Empty>No membership requests yet.</Empty>}
-      {data?.memberships.map((m) => (
-        <article className="card list-row" key={m.id}>
-          <div>
-            <strong>
-              {m.name} · {m.plan}
-            </strong>
-            <p>
-              {m.email} · {m.status}
-              {m.valid_until ? ' · Until ' + date(m.valid_until) : ''}
-            </p>
-          </div>
-          <div className="actions">
-            {(m.status === 'pending'
-              ? ['active', 'cancelled']
-              : m.status === 'active'
-                ? ['cancelled']
-                : []
-            ).map((status) => (
-              <Action
-                key={status}
-                className="button outline small"
-                onClick={async () => {
-                  if (
-                    !window.confirm(
-                      status === 'active' ? 'Activate this membership?' : 'Cancel this membership?',
-                    )
-                  )
-                    return;
-                  try {
-                    await api('/admin/memberships/' + m.id, { method: 'PATCH', body: { status } });
-                    reload();
-                  } catch {
-                    // The API displays a persistent error notification.
-                  }
-                }}
-              >
-                {status === 'active' ? 'Activate' : 'Cancel'}
-              </Action>
-            ))}
-          </div>
-        </article>
-      ))}
-      <h2 className="spaced">Enquiries</h2>
-      {!data?.enquiries.length && <Empty>No enquiries yet.</Empty>}
-      {data?.enquiries.map((e) => (
-        <article className="card" key={e.id}>
-          <h3>
-            {e.name} {e.organization && '· ' + e.organization}
-          </h3>
-          <p>{e.email}</p>
-          <p className="prose">{e.message}</p>
-        </article>
-      ))}
       {[
-        ['bookings', 'Coaching bookings'],
         ['registrations', 'Event registrations'],
         ['users', 'Accounts'],
       ].map(([key, label]) => (
         <div key={key}>
           <h2 className="spaced">{label}</h2>
+          {key === 'registrations' && (
+            <label className="field">
+              <span>Search registrations by event name/ID, name or phone</span>
+              <input
+                type="search"
+                value={registrationSearch}
+                onChange={(event) => setRegistrationSearch(event.target.value)}
+              />
+            </label>
+          )}
           {!data?.[key].length && <Empty>No records yet.</Empty>}
-          {data?.[key].map((row) => (
-            <div className="list-row" key={row.id}>
-              <div>
-                <strong>{row.name}</strong>
-                <p>{row.email}</p>
-              </div>
-              <div>
-                {row.item ? (
-                  <>
-                    <strong>{row.item.title}</strong>
-                    <p>{date(row.item.start)}</p>
-                  </>
-                ) : (
-                  row.role
+          {data?.[key]
+            .filter(
+              (row) =>
+                key !== 'registrations' ||
+                [row.name, row.phone, row.item?.title, row.event_id]
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(registrationSearch.toLowerCase()),
+            )
+            .map((row) => (
+              <div className="list-row" key={row.id}>
+                <div>
+                  <strong>{row.name}</strong>
+                  <p>{row.email}</p>
+                  {key === 'registrations' && (
+                    <p>
+                      {row.phone ? (
+                        <a href={'tel:' + row.phone}>{row.phone}</a>
+                      ) : (
+                        'Phone not recorded'
+                      )}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  {row.item ? (
+                    <>
+                      <strong>{row.item.title}</strong>
+                      <p>{date(row.item.start)}</p>
+                      {key === 'registrations' && (
+                        <>
+                          <p>Event ID: {row.event_id}</p>
+                          <p>Registered: {date(row.created_at.replace(' ', 'T') + 'Z')}</p>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    row.role
+                  )}
+                </div>
+                {key === 'registrations' && (
+                  <Action
+                    className="text-button danger"
+                    onClick={async () => {
+                      if (!window.confirm('Cancel this reservation?')) return;
+                      try {
+                        await api('/admin/' + key + '/' + row.id, { method: 'DELETE' });
+
+                        reload();
+                      } catch {
+                        // The API displays a persistent error notification.
+                      }
+                    }}
+                  >
+                    Cancel
+                  </Action>
+                )}
+                {key === 'registrations' && (
+                  <button className="button outline" onClick={() => setEditingRegistration(row)}>
+                    Edit details
+                  </button>
                 )}
               </div>
-              {['bookings', 'registrations'].includes(key) && (
-                <Action
-                  className="text-button danger"
-                  onClick={async () => {
-                    if (!window.confirm('Cancel this reservation?')) return;
-                    try {
-                      await api('/admin/' + key + '/' + row.id, { method: 'DELETE' });
-
-                      reload();
-                    } catch {
-                      // The API displays a persistent error notification.
-                    }
-                  }}
-                >
-                  Cancel
-                </Action>
-              )}
-            </div>
-          ))}
+            ))}
         </div>
       ))}
+      {editingRegistration && (
+        <AdminModal
+          title={'Edit registration: ' + editingRegistration.item.title}
+          onClose={() => setEditingRegistration(null)}
+        >
+          <RegistrationDetailsForm
+            initial={editingRegistration}
+            submitLabel="Save details"
+            onCancel={() => setEditingRegistration(null)}
+            onSave={async (details) => {
+              await api('/admin/registrations/' + editingRegistration.id, {
+                method: 'PATCH',
+                body: details,
+              });
+              setEditingRegistration(null);
+              reload();
+            }}
+          />
+        </AdminModal>
+      )}
     </State>
   );
 }
@@ -804,9 +809,11 @@ export default function Admin() {
       items: [
         { id: 'page:header', label: 'Header & navigation' },
         { id: 'page:home', label: 'Home' },
-        { id: 'page:about', label: 'About & team' },
+        { id: 'page:about', label: 'About page' },
         { id: 'page:coaching', label: 'Coaching page' },
         { id: 'page:events', label: 'Events page' },
+        { id: 'page:contact', label: 'Contact page' },
+        { id: 'page:gallery', label: 'Gallery page' },
         { id: 'pages', label: 'Other pages' },
         { id: 'footer', label: 'Footer' },
         { id: 'gallery', label: 'Gallery' },
@@ -820,7 +827,13 @@ export default function Admin() {
         { id: 'plans', label: 'Membership plans' },
       ],
     },
-    { label: 'People', items: [{ id: 'members', label: 'Members & access' }] },
+    {
+      label: 'People',
+      items: [
+        { id: 'team', label: 'Team members' },
+        { id: 'members', label: 'Members & access' },
+      ],
+    },
   ];
   return (
     <section className="section">
@@ -859,6 +872,8 @@ export default function Admin() {
             <Overview />
           ) : tab === 'members' ? (
             <MemberManager />
+          ) : tab === 'team' ? (
+            <TeamManager />
           ) : tab === 'footer' ? (
             <FooterManager />
           ) : (

@@ -12,7 +12,7 @@ const safeDestination = (value, contactLink = false) => {
     return false;
   }
 };
-function schemaFor(sample, key = '') {
+export function schemaFor(sample, key = '') {
   if (Array.isArray(sample)) {
     return z
       .array(schemaFor(sample[0] ?? ''))
@@ -30,6 +30,7 @@ function schemaFor(sample, key = '') {
       ),
     );
   if (typeof sample === 'boolean') return z.boolean();
+  if (typeof sample === 'number') return z.number().int().min(0).max(10000);
   if (['href', 'image', 'Chess', 'Badminton'].includes(key))
     return z
       .string()

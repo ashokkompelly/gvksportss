@@ -18,6 +18,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from './ui';
 import SiteNavLink from './SiteNavLink';
+import LaunchExperience from './LaunchExperience';
 import { pageDefaults, mergeContent, visibleItems } from '../../../../shared/siteContent';
 
 const navIcons = {
@@ -35,7 +36,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const [error, setError] = useState('');
   const [scrolled, setScrolled] = useState(false);
-  const { data: pages } = useData('/catalog/pages');
+  const { data: pages, error: pagesError } = useData('/catalog/pages');
   const footer = pages?.find((page) => page.slug === 'footer')?.config;
   const location = useLocation();
   const headerPage = pages?.find((page) => page.slug === 'header');
@@ -44,6 +45,8 @@ export default function Layout() {
     : pages === null
       ? pageDefaults.header.config
       : null;
+  const home = pages?.find((page) => page.slug === 'home');
+  const launch = home ? mergeContent(pageDefaults.home.config.launch, home.config?.launch) : null;
   const brand = header?.brand;
   const account = header?.account;
   const menus = header?.navigation.enabled
@@ -67,12 +70,20 @@ export default function Layout() {
 
   return (
     <>
+      {location.pathname === '/' && (
+        <LaunchExperience
+          settings={launch}
+          brand={brand || pageDefaults.header.config.brand}
+          loading={pages === null && !pagesError}
+          replay={new URLSearchParams(location.search).get('launch') === '1'}
+        />
+      )}
       {header && (
         <header className={`header managed-header${scrolled ? ' scrolled' : ''}`}>
           <SiteNavLink
             href={brand.href}
             newTab={brand.newTab}
-            className="brand"
+            className="brand brand-with-tagline"
             aria-label={brand.name || brand.alt}
           >
             {brand.showLogo && brand.image && (
@@ -89,7 +100,7 @@ export default function Layout() {
             {(brand.showName || brand.showTagline) && (
               <div className="brand-text">
                 {brand.showName && <strong>{brand.name}</strong>}
-                {brand.showTagline && <small>{brand.tagline}</small>}
+                {brand.showTagline && <small className="brand-tagline">{brand.tagline}</small>}
               </div>
             )}
           </SiteNavLink>
@@ -160,7 +171,7 @@ export default function Layout() {
           <div className="footer-top">
             {/* Brand Col */}
             <div className="footer-brand">
-              <Link to="/" className="brand">
+              <Link to="/" className="brand brand-with-tagline">
                 <img
                   src={brand?.image || pageDefaults.header.config.brand.image}
                   alt={brand?.alt || footer.brandName}
@@ -169,7 +180,7 @@ export default function Layout() {
                 />
                 <div className="brand-text">
                   <strong style={{ fontSize: '20px' }}>{footer.brandName}</strong>
-                  <small>{footer.brandTagline}</small>
+                  <small className="brand-tagline">{footer.brandTagline}</small>
                 </div>
               </Link>
               <p>{footer.brandDescription}</p>

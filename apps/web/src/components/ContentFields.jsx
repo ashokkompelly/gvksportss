@@ -1,6 +1,11 @@
 import ImageUpload from './ImageUpload';
 const labels = {
   header: 'Header & navigation',
+  launch: 'Launch screen',
+  buttonLabel: 'Launch button label',
+  skipLabel: 'Enter website link label',
+  countdownLabel: 'Countdown caption',
+  welcomeLabel: 'Welcome caption',
   brand: 'Logo & brand',
   tagline: 'Brand tagline',
   navigation: 'Navigation menus',
@@ -102,6 +107,7 @@ export function newEntry(template) {
       ]),
     );
   if (typeof template === 'boolean') return template;
+  if (typeof template === 'number') return 0;
   return '';
 }
 export function Fields({ value, template, onChange, onItemAdded, path = 'config' }) {
@@ -110,11 +116,13 @@ export function Fields({ value, template, onChange, onItemAdded, path = 'config'
     .map(([key, sample]) => {
       const current = value[key] ?? sample;
       const label =
-        path === 'config.navigation' && key === 'items'
-          ? 'Menu items'
-          : path === 'config.brand' && key === 'name'
-            ? 'Brand name'
-            : labelFor(key);
+        path === 'config.launch' && key === 'enabled'
+          ? 'Activate launch screen'
+          : path === 'config.navigation' && key === 'items'
+            ? 'Menu items'
+            : path === 'config.brand' && key === 'name'
+              ? 'Brand name'
+              : labelFor(key);
       const fieldPath = path + '.' + key;
       const update = (next) => onChange({ ...value, [key]: next });
       if (Array.isArray(sample)) {
@@ -256,13 +264,33 @@ export function Fields({ value, template, onChange, onItemAdded, path = 'config'
             <span>{label}</span>
           </label>
         );
+      if (typeof sample === 'number')
+        return (
+          <label className="field" key={key}>
+            <span>{label}</span>
+            <input
+              type="number"
+              min="0"
+              max="10000"
+              step="1"
+              value={current}
+              onChange={(event) => update(Number(event.target.value))}
+            />
+          </label>
+        );
       if (key === 'image')
         return (
           <ImageUpload
             key={key}
             value={current}
             onChange={update}
-            label={path === 'config.brand' ? 'Logo' : 'Image'}
+            label={
+              path === 'config.brand'
+                ? 'Logo'
+                : path === 'config.training'
+                  ? 'Trainer photo'
+                  : 'Image'
+            }
           />
         );
       const long =

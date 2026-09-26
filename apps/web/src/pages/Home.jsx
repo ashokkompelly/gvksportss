@@ -4,6 +4,7 @@ import { ArrowUpRight, Users, Building2, Trophy, Pause, Play, School } from 'luc
 import { useData, State, Empty } from '../components/ui';
 import { usePageContent } from '../lib/content';
 import { visibleItems } from '../../../../shared/siteContent';
+import EventRegistration from '../components/EventRegistration';
 
 const icons = { trophy: Trophy, building: Building2, users: Users, school: School };
 function ButtonLink({ action, className = 'button gold' }) {
@@ -30,6 +31,18 @@ export default function Home() {
   const events = useData('/catalog/events');
   const [heroSlide, setHeroSlide] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [launchActive, setLaunchActive] = useState(false);
+  useEffect(() => {
+    const reset = () => setHeroSlide(0);
+    const visibility = (event) => setLaunchActive(event.detail);
+    setLaunchActive(!!document.querySelector('.launch-experience[open]'));
+    window.addEventListener('gvk:launch-complete', reset);
+    window.addEventListener('gvk:launch-visibility', visibility);
+    return () => {
+      window.removeEventListener('gvk:launch-complete', reset);
+      window.removeEventListener('gvk:launch-visibility', visibility);
+    };
+  }, []);
   const slides = visibleItems(content?.hero.slides);
   const activeIndex = slides.length ? heroSlide % slides.length : 0;
   const slide = slides[activeIndex];
@@ -42,6 +55,7 @@ export default function Home() {
   useEffect(() => {
     if (
       paused ||
+      launchActive ||
       !content?.hero.enabled ||
       slides.length < 2 ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -52,7 +66,7 @@ export default function Home() {
       7000,
     );
     return () => window.clearInterval(timer);
-  }, [paused, slides.length, content?.hero.enabled]);
+  }, [paused, launchActive, slides.length, content?.hero.enabled]);
   if (!page)
     return (
       <section className="section">
@@ -76,6 +90,7 @@ export default function Home() {
                 >
                   <span className="eyebrow">{item.label}</span>
                   <h1>{item.title}</h1>
+                  {item.tagline && <p className="hero-brand-tagline">{item.tagline}</p>}
                   <p>{item.description}</p>
                 </div>
               ))}
@@ -111,6 +126,9 @@ export default function Home() {
                   >
                     <span>{hero.captionLabel}</span>
                     <strong>{item.caption}</strong>
+                    {item.containImage && item.tagline && (
+                      <span className="hero-logo-tagline">{item.tagline}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -215,7 +233,11 @@ export default function Home() {
                     dateStyle: 'medium',
                   })}
                 </div>
-                <ButtonLink action={calendar.eventAction} />
+                <EventRegistration
+                  key={featuredEvent.id}
+                  event={featuredEvent}
+                  onRegistered={events.reload}
+                />
               </div>
             </div>
           ) : (
@@ -254,14 +276,25 @@ export default function Home() {
             <span className="badge">{training.badge}</span>
           </SectionTitle>
           <div className="chess-training-grid">
-            <div>
-              <h3>{training.trainerTitle}</h3>
-              {training.paragraphs.map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-              <div className="actions">
-                <ButtonLink action={training.primaryAction} />
-                <ButtonLink action={training.secondaryAction} className="light-link" />
+            <div className={`trainer-profile${training.image ? ' with-photo' : ''}`}>
+              {training.image && (
+                <div className="trainer-photo">
+                  <img
+                    src={training.image}
+                    alt={training.imageAlt || training.trainerTitle}
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <div className="trainer-profile-copy">
+                <h3>{training.trainerTitle}</h3>
+                {training.paragraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+                <div className="actions">
+                  <ButtonLink action={training.primaryAction} />
+                  <ButtonLink action={training.secondaryAction} className="light-link" />
+                </div>
               </div>
             </div>
             <div className="training-platform">

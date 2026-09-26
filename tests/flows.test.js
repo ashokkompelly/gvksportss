@@ -1,13 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 const temp = mkdtempSync(path.join(os.tmpdir(), 'gvk-test-'));
-process.env.DATABASE_PATH = path.join(temp, 'test.sqlite');
+process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
 process.env.APP_ORIGIN = 'http://localhost:5173';
 const { app } = await import('../apps/api/src/app.js');
-const { db } = await import('../apps/api/src/db/index.js');
+const { store } = await import('../apps/api/src/db/index.js');
 const { hashPassword } = await import('../apps/api/src/modules/auth.js');
 const server = app.listen(0);
 await new Promise((r) => server.once('listening', r));
@@ -39,11 +40,12 @@ test('Complete access, content, booking and membership flow', async () => {
       (await request('/auth/logout', 'POST', {}, uc, 'https://evil.example')).status,
       403,
     );
-    db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-      'Admin',
-      'admin@example.com',
-      await hashPassword('test-admin-password'),
-    );
+    await store.insert('users', {
+      name: 'Admin',
+      email: 'admin@example.com',
+      password: await hashPassword('test-admin-password'),
+      role: 'admin',
+    });
     const a = await request('/auth/login', 'POST', {
       email: 'admin@example.com',
       password: 'test-admin-password',
@@ -172,7 +174,8 @@ test('Complete access, content, booking and membership flow', async () => {
     assert.equal((await request('/member', 'GET', null, uc)).status, 401);
   } finally {
     await new Promise((r) => server.close(r));
-    db.close();
+    await store.database.dropDatabase();
+    await store.close();
     rmSync(temp, { recursive: true, force: true });
   }
 });

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { resources, db } from '../db/index.js';
+import { resources, store } from '../db/index.js';
 import { schemas, fail } from './schemas.js';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
@@ -14,25 +14,38 @@ function publicContent(value) {
   return value;
 }
 export const catalog = Router();
-catalog.get('/:kind', (req, res) => {
+catalog.get('/:kind', async (req, res) => {
   if (!schemas[req.params.kind]) fail(404, 'Not found');
   res.json(
-    resources(req.params.kind).map((r) => {
-      if (['slots', 'events'].includes(req.params.kind)) {
-        const table = req.params.kind === 'slots' ? 'bookings' : 'registrations',
-          key = req.params.kind === 'slots' ? 'slot_id' : 'event_id';
-        const count = db.prepare(`SELECT count(*) AS n FROM ${table} WHERE ${key}=?`).get(r.id).n;
-        return { ...r, remaining: r.capacity - count };
-      }
-      return req.params.kind === 'pages' ? publicContent(r) : r;
-    }),
+    await Promise.all(
+      (await resources(req.params.kind)).map(async (r) => {
+        if (['slots', 'events'].includes(req.params.kind)) {
+          const table = req.params.kind === 'slots' ? 'bookings' : 'registrations',
+            key = req.params.kind === 'slots' ? 'slot_id' : 'event_id';
+          const count = await store.count(table, {
+            [key]: r.id,
+          });
+          return {
+            ...r,
+            remaining: r.capacity - count,
+          };
+        }
+        return req.params.kind === 'pages' ? publicContent(r) : r;
+      }),
+    ),
   );
 });
 export const enquiries = Router();
 enquiries.post(
   '/',
-  rateLimit({ windowMs: 3600000, limit: 10, message: { error: 'Please try again later.' } }),
-  (req, res) => {
+  rateLimit({
+    windowMs: 3600000,
+    limit: 10,
+    message: {
+      error: 'Please try again later.',
+    },
+  }),
+  async (req, res) => {
     const v = parse(
       z.object({
         name: z.string().trim().min(2).max(120),
@@ -42,12 +55,14 @@ enquiries.post(
       }),
       req.body,
     );
-    db.prepare('INSERT INTO enquiries(name,email,organization,message) VALUES(?,?,?,?)').run(
-      v.name,
-      v.email,
-      v.organization,
-      v.message,
-    );
-    res.status(201).json({ ok: true });
+    await store.insert('enquiries', {
+      name: v.name,
+      email: v.email,
+      organization: v.organization,
+      message: v.message,
+    });
+    res.status(201).json({
+      ok: true,
+    });
   },
 );

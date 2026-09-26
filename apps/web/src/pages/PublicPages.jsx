@@ -12,7 +12,8 @@ export function ContentPage({ slug: fixed }) {
   const { data, error, page, content: pageContent } = usePageContent(slug);
   const [filter, setFilter] = useState('All');
   const content = slug === 'about' ? pageContent : null;
-  const members = visibleItems(content?.team.members);
+  const team = useData('/catalog/team');
+  const members = visibleItems(team.data || []);
   const categories = [
     ...new Set(members.flatMap((member) => [member.category, ...member.sports])),
   ].filter(Boolean);
@@ -20,7 +21,10 @@ export function ContentPage({ slug: fixed }) {
 
   return (
     <section className="section">
-      <State data={data} error={error}>
+      <State
+        data={slug === 'about' && team.data === null ? null : data}
+        error={error || (slug === 'about' && team.error)}
+      >
         {page ? (
           <>
             <Heading eyebrow={content?.eyebrow || 'GVK SPORTSS'} title={page.title} />
@@ -136,10 +140,20 @@ export function ContentPage({ slug: fixed }) {
 
 export function Gallery() {
   const { data, error } = useData('/catalog/gallery');
+  const pageState = usePageContent('gallery');
+  const { page, content } = pageState;
+  if (!page)
+    return (
+      <section className="section">
+        <State data={pageState.data} error={pageState.error}>
+          <Empty>This page is not currently published.</Empty>
+        </State>
+      </section>
+    );
   return (
     <section className="section">
-      <Heading eyebrow="IN THE FRAME" title="Moments That Bring Us Together">
-        Glimpses of competitive rallies, tactical masterclasses, and championship celebrations.
+      <Heading eyebrow={content.eyebrow} title={page.title}>
+        {page.body}
       </Heading>
       <State data={data} error={error}>
         <div className="gallery">
@@ -155,7 +169,7 @@ export function Gallery() {
             </figure>
           ))}
         </div>
-        {!data?.length && <Empty>Photos and highlights will appear here soon.</Empty>}
+        {!data?.length && <Empty>{content.emptyMessage}</Empty>}
       </State>
     </section>
   );
@@ -163,33 +177,36 @@ export function Gallery() {
 
 export function Contact() {
   const [params] = useSearchParams();
-  const { data } = useData('/catalog/pages');
+  const { data, error, page, content } = usePageContent('contact');
   const footer = data?.find((page) => page.slug === 'footer')?.config;
-  const phones = footer?.phones || ['+91 94920 63258', '+91 91234 56789'];
-  const emails = footer?.emails || ['gvksportss@gmail.com'];
-  const interest = params.get('interest') || 'Sports event management';
-  const subject = encodeURIComponent('GVK Sportss enquiry: ' + interest);
+  const phones = footer?.phones || [];
+  const emails = footer?.emails || [];
+  if (!page)
+    return (
+      <section className="section">
+        <State data={data} error={error}>
+          <Empty>This page is not currently published.</Empty>
+        </State>
+      </section>
+    );
+  const interest = params.get('interest') || content.defaultInterest;
+  const subject = encodeURIComponent(content.subjectPrefix + interest);
   return (
     <section className="section contact-direct">
-      <Heading eyebrow="LET'S TALK EVENTS" title="Great events start here.">
-        Planning a tournament, corporate sports day or community competition? Call or email our team
-        to bring your ideas to life.
+      <Heading eyebrow={content.eyebrow} title={page.title}>
+        {page.body}
       </Heading>
       <div className="contact-intro">
-        <span className="eyebrow">YOUR NEXT EVENT</span>
-        <h2>One conversation. A world of possibilities.</h2>
-        <p>
-          Share your preferred dates, sports and group size. We will help you take the next step.
-          Personal chess training, Chesslang coaching and free demo enquiries are welcome too. We
-          also offer badminton coaching.
-        </p>
+        <span className="eyebrow">{content.intro.eyebrow}</span>
+        <h2>{content.intro.title}</h2>
+        <p>{content.intro.description}</p>
       </div>
       <div className="grid two">
         <article className="direct-contact-card">
           <PhoneCall size={30} />
-          <span className="eyebrow">CALL OUR TEAM</span>
-          <h2>Let's talk through your ideas.</h2>
-          <p>Speak directly with our events and coaching team.</p>
+          <span className="eyebrow">{content.phone.eyebrow}</span>
+          <h2>{content.phone.title}</h2>
+          <p>{content.phone.description}</p>
           <div className="direct-contact-links">
             {phones.map((phone) => (
               <a key={phone} href={'tel:' + phone.replace(/[^+\d]/g, '')}>
@@ -201,9 +218,9 @@ export function Contact() {
         </article>
         <article className="direct-contact-card">
           <Mail size={30} />
-          <span className="eyebrow">SEND AN EMAIL</span>
-          <h2>Tell us what you have in mind.</h2>
-          <p>Send your event brief or ask us about our services.</p>
+          <span className="eyebrow">{content.email.eyebrow}</span>
+          <h2>{content.email.title}</h2>
+          <p>{content.email.description}</p>
           <div className="direct-contact-links">
             {emails.map((email) => (
               <a key={email} href={'mailto:' + email + '?subject=' + subject}>

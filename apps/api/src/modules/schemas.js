@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { validatePageContent } from './page-content.js';
+import { validatePageContent, schemaFor } from './page-content.js';
+import { teamMemberTemplate } from '../../../../shared/siteContent.js';
 const title = z.string().trim().min(2).max(120),
   description = z.string().trim().min(5).max(5000),
   sport = z.enum(['Chess', 'Badminton']);
@@ -18,6 +19,7 @@ const media = z
 const published = z.boolean().default(false),
   integer = z.number().int().min(1).max(10000);
 export const schemas = {
+  team: schemaFor(teamMemberTemplate).extend({ legacyId: z.string().max(100).optional() }),
   pages: z
     .object({
       slug: z

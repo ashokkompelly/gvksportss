@@ -9,10 +9,10 @@
     "admin:create:production": "node --env-file-if-exists=../../.env src/scripts/create-admin.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
+    "mongodb": "^7.6.0",
     "sharp": "^0.35.4",
     "zod": "^4.1.0"
   }

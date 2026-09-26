@@ -56,6 +56,14 @@ export default function Layout() {
   const mobileMenus = menus.filter((item) => item.mobile);
   const signedInAction = user?.role === 'admin' ? account?.adminAction : account?.memberAction;
   const mobileAccount = user ? signedInAction : account?.mobileGuestAction;
+  const footerQuickLinks = [...(footer?.quickLinks || [])];
+  if (!footerQuickLinks.some((link) => link.href === '/login')) {
+    const teamIndex = footerQuickLinks.findIndex((link) => link.href === '/about');
+    footerQuickLinks.splice(teamIndex < 0 ? footerQuickLinks.length : teamIndex + 1, 0, {
+      label: 'Member Portal',
+      href: '/login',
+    });
+  }
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -118,7 +126,7 @@ export default function Layout() {
               ))}
             </nav>
           )}
-          {account.desktopEnabled && (
+          {account.desktopEnabled && user && (
             <div className="header-actions">
               {user ? (
                 <>
@@ -217,7 +225,7 @@ export default function Layout() {
             <div className="footer-col">
               <h4>{footer.quickLinksTitle}</h4>
               <ul className="footer-links">
-                {footer.quickLinks.map((link) => (
+                {footerQuickLinks.map((link) => (
                   <li key={link.label}>
                     <Link to={link.href}>{link.label}</Link>
                   </li>

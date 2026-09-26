@@ -626,7 +626,7 @@ export const pageDefaults = {
             icon: 'image',
             published: true,
             desktop: true,
-            mobile: false,
+            mobile: true,
             newTab: false,
           },
           {

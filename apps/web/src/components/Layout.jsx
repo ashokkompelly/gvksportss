@@ -18,6 +18,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from './ui';
 import SiteNavLink from './SiteNavLink';
+import MobileNavIcon from './MobileNavIcon';
 import LaunchExperience from './LaunchExperience';
 import { pageDefaults, mergeContent, visibleItems } from '../../../../shared/siteContent';
 
@@ -53,9 +54,9 @@ export default function Layout() {
     ? visibleItems(header.navigation.items).filter((item) => item.href && item.label)
     : [];
   const desktopMenus = menus.filter((item) => item.desktop);
-  const mobileMenus = menus.filter((item) => item.mobile);
+  const mobileMenus = menus.filter((item) => item.mobile || item.href === '/gallery');
   const signedInAction = user?.role === 'admin' ? account?.adminAction : account?.memberAction;
-  const mobileAccount = user ? signedInAction : account?.mobileGuestAction;
+  const mobileAccount = user ? signedInAction : null;
   const footerQuickLinks = [...(footer?.quickLinks || [])];
   if (!footerQuickLinks.some((link) => link.href === '/login')) {
     const teamIndex = footerQuickLinks.findIndex((link) => link.href === '/about');
@@ -320,8 +321,8 @@ export default function Layout() {
                 className="bottom-nav-item"
                 activeClassName="active"
               >
-                <Icon size={22} />
-                <span>{item.label}</span>
+                <MobileNavIcon name={item.icon} fallback={Icon} />
+                <span className="mobile-nav-label">{item.label}</span>
               </SiteNavLink>
             );
           })}
@@ -332,8 +333,8 @@ export default function Layout() {
               className="bottom-nav-item"
               activeClassName="active"
             >
-              <UserRound size={22} />
-              <span>{mobileAccount.label}</span>
+              <MobileNavIcon name="user" fallback={UserRound} />
+              <span className="mobile-nav-label">{mobileAccount.label}</span>
             </SiteNavLink>
           )}
         </nav>

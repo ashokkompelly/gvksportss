@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
-import { mkdirSync, renameSync, rmSync } from 'node:fs';
+import { mkdirSync, existsSync, renameSync, rmSync } from 'node:fs';
+import { backup, DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import { root } from '../apps/api/src/config/env.js';
 import { createSqliteStore } from '../apps/api/src/db/sqlite.js';
@@ -78,7 +79,15 @@ try {
     throw new Error('Snapshot integrity check failed');
   await local.close();
   local = null;
-  renameSync(temporary, target);
+  if (existsSync(target)) {
+    // SQLite backup can update an open read-only snapshot on Windows; renaming cannot.
+    const snapshot = new DatabaseSync(temporary, { readOnly: true });
+    try {
+      await backup(snapshot, target);
+    } finally {
+      snapshot.close();
+    }
+  } else renameSync(temporary, target);
   console.log(
     `Saved ${count} published content records and ${images.size} images to data/content-fallback.sqlite. No accounts or personal records were exported.`,
   );

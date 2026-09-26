@@ -10,12 +10,12 @@ export const pageDefaults = {
     config: {
       launch: {
         enabled: true,
-        eyebrow: 'THE GRAND OPENING',
-        title: 'A new arena.\nA new beginning.',
+        eyebrow: 'The Grand Opening',
+        title: 'Creating Events, Inspiring Champions',
         description: 'The stage is set. Join us as we open the doors to GVK Sportss.',
-        tagline: brandTagline,
-        buttonLabel: 'Launch Website',
-        skipLabel: 'Enter website',
+        tagline: "Just Play Don't Stop",
+        buttonLabel: 'Launch Now',
+        skipLabel: 'Explore GVK Sportss',
         countdownLabel: 'THE MOMENT IS HERE',
         welcomeLabel: 'WELCOME TO GVK SPORTSS',
       },

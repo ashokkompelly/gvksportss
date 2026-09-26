@@ -37,6 +37,16 @@ The previous `gvksportss` database is retained as a backup.
 | `membership_plans` | Membership plans and prices                           |
 | `coaching_slots`   | Bookable coaching sessions                            |
 | `gallery`          | Gallery entries                                       |
+| `team_members`     | Team profiles, photos, achievements and display order |
+
+Admin → Team members manages profiles independently of the About page. About
+page settings control the team section heading and visibility. Admin → Contact
+page and Gallery page manage their headings and descriptions; Footer settings
+remain the shared source of phone numbers and email addresses.
+
+Migration 20 preserves existing team profiles and their order, verifies each
+profile, and adds the two page editors. Migration 21 applies the approved launch
+copy once. Later admin changes are not reset when the API restarts.
 
 Each document has its original numeric `id`, `kind`, `created_at`, `updated_at`,
 and a native `content` object. Expand `content` in Atlas to inspect fields such

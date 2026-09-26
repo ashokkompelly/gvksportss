@@ -1,6 +1,7 @@
 import { pageDefaults, mergeContent, brandTagline } from '../../../../shared/siteContent.js';
 import { eventExperience } from '../../../../shared/eventExperience.js';
 import { migrateTeamAndPages } from './migrate-team-pages.js';
+import { migrateLaunchCopy } from './migrate-launch-copy.js';
 const likePattern = (value) => value.replace(/^%|%$/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export async function seedContent(store) {
@@ -1176,4 +1177,5 @@ export async function seedContent(store) {
   });
 
   await migrateTeamAndPages(store);
+  await migrateLaunchCopy(store);
 }

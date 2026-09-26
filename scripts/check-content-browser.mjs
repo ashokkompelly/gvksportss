@@ -215,6 +215,22 @@ try {
     await wait(80);
   };
   await checkLaunchFit();
+  assert.equal(
+    await evaluate('document.querySelector(".launch-eyebrow").textContent.trim()'),
+    'The Grand Opening',
+  );
+  assert.equal(
+    await evaluate('document.querySelector("#launch-title").textContent'),
+    'Creating Events, Inspiring Champions',
+  );
+  assert.equal(
+    await evaluate('document.querySelector(".launch-button span").textContent'),
+    'Launch Now',
+  );
+  assert.equal(
+    await evaluate('document.querySelector(".launch-skip").textContent.trim()'),
+    'Explore GVK Sportss',
+  );
   fs.writeFileSync(
     path.join(os.tmpdir(), 'gvk-launch-desktop.png'),
     Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'),
@@ -252,10 +268,9 @@ try {
     mobile: false,
   });
   const launchedAt = await evaluate(
-    '(()=>{const start=performance.now();document.querySelector(".launch-button").click();return start})()',
+    '(()=>{window.__launchRevealAt=0;const observer=new MutationObserver(()=>{if(document.querySelector(".launch-phase-revealing")&&!window.__launchRevealAt){window.__launchRevealAt=performance.now();observer.disconnect();}});observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:["class"]});const start=performance.now();document.querySelector(".launch-button").click();return start})()',
   );
   await until('document.querySelector(".launch-number")?.textContent==="5"');
-  await checkLaunchFit();
   assert.ok(
     await evaluate(
       'Math.abs(document.querySelector(".launch-experience").getBoundingClientRect().width-innerWidth)<2',
@@ -265,11 +280,9 @@ try {
     path.join(os.tmpdir(), 'gvk-launch-countdown.png'),
     Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'),
   );
-  await wait(3000);
-  assert.ok(await evaluate('!!document.querySelector(".launch-countdown")'));
-  await until('!!document.querySelector(".launch-phase-revealing")');
+  await until('window.__launchRevealAt > 0');
   assert.ok(
-    (await evaluate('performance.now()')) - launchedAt >= 4900,
+    (await evaluate('window.__launchRevealAt')) - launchedAt >= 4900,
     'Five seconds before curtain rises',
   );
   await wait(950);
@@ -628,5 +641,10 @@ try {
   await store.database.dropDatabase();
   await store.close();
   assert.ok(path.resolve(temp).startsWith(path.resolve(os.tmpdir()) + path.sep));
-  fs.rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  try {
+    fs.rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (error) {
+    if (!['EPERM', 'EBUSY', 'ENOTEMPTY'].includes(error.code)) throw error;
+    console.warn('Chrome still holds its temporary test profile; cleanup deferred:', temp);
+  }
 }

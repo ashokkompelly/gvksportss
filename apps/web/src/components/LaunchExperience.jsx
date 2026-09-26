@@ -119,17 +119,17 @@ export default function LaunchExperience({ settings, brand, loading, replay = fa
         <div className="launch-frame" aria-hidden="true" />
         <div className="launch-viewport" ref={viewport}>
           <div className="launch-content" ref={content}>
-            <div className="launch-brand">
-              <span />
-              {brand?.name || 'GVK SPORTSS'}
-              <span />
-            </div>
             <div className="launch-logo">
               <div className="launch-logo-orbit" aria-hidden="true" />
               {brand?.image && (
                 <img src={brand.image} alt={brand.alt || brand.name || 'GVK Sportss'} />
               )}
             </div>
+            {/* <div className="launch-brand">
+              <span />
+              {brand?.name || 'GVK SPORTSS'}
+              <span />
+            </div> */}
             {!loading && <p className="launch-tagline">{settings.tagline}</p>}
             {loading ? (
               <p className="launch-eyebrow" role="status">

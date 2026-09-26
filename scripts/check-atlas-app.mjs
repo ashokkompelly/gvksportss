@@ -9,7 +9,7 @@ try {
   const base = `http://127.0.0.1:${server.address().port}`;
   const health = await fetch(base + '/api/health');
   assert.equal(health.status, 200);
-  assert.deepEqual(await health.json(), { ok: true, database: 'mongodb' });
+  assert.deepEqual(await health.json(), { ok: true, database: 'mongodb', readOnly: false });
   for (const kind of ['pages', 'events', 'programs', 'plans', 'slots', 'gallery', 'team']) {
     const response = await fetch(base + '/api/catalog/' + kind);
     assert.equal(response.status, 200);

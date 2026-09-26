@@ -1,6 +1,8 @@
 import { mongoStore } from './store.js';
 if (!process.env.MONGODB_URI)
-  throw new Error('MONGODB_URI is required. Configure it in the active environment file.');
+  throw new Error(
+    'MONGODB_URI is required. Set it in your hosting environment variables or local environment file.',
+  );
 export const store = await mongoStore(
   process.env.MONGODB_URI,
   process.env.MONGODB_DATABASE || 'gvk_db',

@@ -28,7 +28,15 @@ const valid = (table) => {
 
 export async function mongoStore(uri, database) {
   const client = new MongoClient(uri, { serverSelectionTimeoutMS: 15000, connectTimeoutMS: 10000 });
-  await client.connect();
+  try {
+    await client.connect();
+  } catch (error) {
+    await client.close();
+    console.error(
+      'MongoDB connection failed. Check hosting outbound TCP access to Atlas (port 27017), the Atlas IP access list, and MONGODB_URI credentials. A local .env file is not required when hosting supplies environment variables.',
+    );
+    throw error;
+  }
   const db = client.db(database);
   const context = new AsyncLocalStorage();
   const options = () => (context.getStore() ? { session: context.getStore() } : {});

@@ -63,17 +63,6 @@ test('Managed page content stays in sync with the public catalog', async (t) => 
       page.config.process.enabled = false;
       page.config.training.trainerTitle = 'Personal training from the portal';
     }
-    if (slug === 'about') {
-      page.config.team.members.reverse();
-      page.config.team.members[0].achievements = ['Updated professional achievement'];
-      page.config.team.members[1].published = false;
-      page.config.team.members.push({
-        ...structuredClone(page.config.team.members[0]),
-        id: 'new-member',
-        name: 'New Team Member',
-        published: true,
-      });
-    }
     if (slug === 'coaching') {
       page.config.cards[0].title = 'Updated chess coaching';
       page.config.cards[0].benefits = ['Managed coaching benefit'];
@@ -92,11 +81,6 @@ test('Managed page content stays in sync with the public catalog', async (t) => 
   assert.equal(home.config.hero.slides[0].title, 'A new chess event headline');
   assert.equal(home.config.process.enabled, false);
   assert.equal(home.config.services.groups[0].items[0].label, 'Managed chess tournaments');
-  const about = publicPages.find((page) => page.slug === 'about');
-  assert.equal(about.config.team.members[0].name, 'Ashok');
-  assert.deepEqual(about.config.team.members[0].achievements, ['Updated professional achievement']);
-  assert.equal(about.config.team.members.at(-1).name, 'New Team Member');
-  assert.ok(!about.config.team.members.some((member) => member.published === false));
   assert.equal(
     publicPages.find((page) => page.slug === 'coaching').config.cards[0].title,
     'Updated chess coaching',
@@ -106,12 +90,98 @@ test('Managed page content stays in sync with the public catalog', async (t) => 
     'Host your updated event',
   );
 
+  await t.test(
+    'team profiles can be edited, ordered, hidden and validated separately',
+    async () => {
+      let members = (await request('/admin/team')).data;
+      assert.equal(members.length, 5);
+      assert.equal(members[0].legacyId, 'member-0');
+      assert.equal(
+        (await request('/admin/team/' + members[0].id, 'PUT', members[0], false)).status,
+        401,
+      );
+      const updated = {
+        ...members[0],
+        name: 'Edited Team Member',
+        achievements: ['Verified edited achievement'],
+      };
+      assert.equal((await request('/admin/team/' + updated.id, 'PUT', updated)).status, 200);
+      assert.equal(
+        (
+          await request('/admin/team/' + updated.id, 'PUT', {
+            ...updated,
+            image: 'javascript:alert(1)',
+          })
+        ).status,
+        400,
+      );
+      const created = await request('/admin/team', 'POST', {
+        ...updated,
+        name: 'New Team Member',
+        order: 10,
+      });
+      assert.equal(created.status, 201);
+      members = (await request('/admin/team')).data;
+      const ids = members.map((member) => member.id).reverse();
+      assert.equal((await request('/admin/team/order', 'PUT', { ids })).status, 200);
+      assert.equal(
+        (await request('/admin/team/order', 'PUT', { ids: [ids[0], ids[0]] })).status,
+        409,
+      );
+      const publicTeam = (await request('/catalog/team')).data;
+      assert.deepEqual(
+        publicTeam.map((member) => member.id),
+        ids,
+      );
+      assert.deepEqual(
+        publicTeam.find((member) => member.id === updated.id).achievements,
+        updated.achievements,
+      );
+      assert.equal(
+        (await request('/admin/team/' + updated.id, 'PUT', { ...updated, published: false }))
+          .status,
+        200,
+      );
+      assert.ok(!(await request('/catalog/team')).data.some((member) => member.id === updated.id));
+      assert.ok((await request('/admin/team')).data.some((member) => member.id === updated.id));
+      assert.equal(
+        (await request('/admin/pages/' + saved.about.id, 'PUT', saved.about)).status,
+        200,
+      );
+      assert.ok(
+        !(await request('/catalog/team')).data.some((member) => member.id === updated.id),
+        'About updates cannot overwrite team edits',
+      );
+    },
+  );
+  await t.test('Contact and Gallery text can be changed and cleared', async () => {
+    const contact = structuredClone(saved.contact);
+    contact.config.intro.title = 'Plan your next event';
+    contact.config.phone.description = '';
+    assert.equal((await request('/admin/pages/' + contact.id, 'PUT', contact)).status, 200);
+    const gallery = structuredClone(saved.gallery);
+    gallery.config.emptyMessage = 'New gallery empty message';
+    assert.equal((await request('/admin/pages/' + gallery.id, 'PUT', gallery)).status, 200);
+    const publicPages = (await request('/catalog/pages')).data;
+    assert.equal(
+      publicPages.find((page) => page.slug === 'contact').config.intro.title,
+      contact.config.intro.title,
+    );
+    assert.equal(publicPages.find((page) => page.slug === 'contact').config.phone.description, '');
+    assert.equal(
+      publicPages.find((page) => page.slug === 'gallery').config.emptyMessage,
+      gallery.config.emptyMessage,
+    );
+  });
   await t.test('empty lists and unpublishing do not restore defaults', async () => {
     const page = structuredClone(saved.about);
-    page.config.team.members = [];
+    const members = (await request('/admin/team')).data;
+    for (const member of members)
+      assert.equal((await request('/admin/team/' + member.id, 'DELETE')).status, 200);
     assert.equal((await request('/admin/pages/' + page.id, 'PUT', page)).status, 200);
     const empty = (await request('/catalog/pages')).data.find((item) => item.slug === 'about');
-    assert.deepEqual(mergeContent(pageDefaults.about.config, empty.config).team.members, []);
+    assert.equal(mergeContent(pageDefaults.about.config, empty.config).team.members, undefined);
+    assert.deepEqual((await request('/catalog/team')).data, []);
     page.published = false;
     assert.equal((await request('/admin/pages/' + page.id, 'PUT', page)).status, 200);
     assert.ok(!(await request('/catalog/pages')).data.some((item) => item.slug === 'about'));
@@ -255,7 +325,8 @@ test('Managed page content stays in sync with the public catalog', async (t) => 
     await import('../apps/api/src/db/seed.js?repeat');
     const pages = (await request('/admin/pages')).data;
     assert.equal(pages.find((page) => page.slug === 'events').title, 'Events title only');
-    assert.deepEqual(pages.find((page) => page.slug === 'about').config.team.members, []);
+    assert.equal(pages.find((page) => page.slug === 'about').config.team.members, undefined);
+    assert.deepEqual((await request('/catalog/team')).data, []);
     assert.ok(!pages.some((page) => page.slug === 'home'));
   });
 });

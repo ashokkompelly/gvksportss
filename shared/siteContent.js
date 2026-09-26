@@ -671,6 +671,47 @@ export const pageDefaults = {
   },
 };
 
+// Historical profiles are used only by the one-time team migration.
+export const initialTeamMembers = structuredClone(pageDefaults.about.config.team.members);
+export const teamMemberTemplate = { ...structuredClone(initialTeamMembers[0]), order: 0 };
+delete teamMemberTemplate.id;
+delete pageDefaults.about.config.team.members;
+
+pageDefaults.contact = {
+  slug: 'contact',
+  title: 'Great events start here.',
+  body: 'Planning a tournament, corporate sports day or community competition? Call or email our team to bring your ideas to life.',
+  published: true,
+  config: {
+    eyebrow: "LET'S TALK EVENTS",
+    defaultInterest: 'Sports event management',
+    subjectPrefix: 'GVK Sportss enquiry: ',
+    intro: {
+      eyebrow: 'YOUR NEXT EVENT',
+      title: 'One conversation. A world of possibilities.',
+      description:
+        'Share your preferred dates, sports and group size. We will help you take the next step. Personal chess training, Chesslang coaching and free demo enquiries are welcome too. We also offer badminton coaching.',
+    },
+    phone: {
+      eyebrow: 'CALL OUR TEAM',
+      title: "Let's talk through your ideas.",
+      description: 'Speak directly with our events and coaching team.',
+    },
+    email: {
+      eyebrow: 'SEND AN EMAIL',
+      title: 'Tell us what you have in mind.',
+      description: 'Send your event brief or ask us about our services.',
+    },
+  },
+};
+pageDefaults.gallery = {
+  slug: 'gallery',
+  title: 'Moments That Bring Us Together',
+  body: 'Glimpses of competitive rallies, tactical masterclasses, and championship celebrations.',
+  published: true,
+  config: { eyebrow: 'IN THE FRAME', emptyMessage: 'Photos and highlights will appear here soon.' },
+};
+
 export const managedSlugs = Object.keys(pageDefaults);
 export const visibleItems = (items = []) => items.filter((item) => item.published !== false);
 

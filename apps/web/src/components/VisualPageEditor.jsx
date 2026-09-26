@@ -108,7 +108,7 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
       add: true,
     });
   };
-  const title = item.slug === 'about' ? 'About & team' : labelFor(item.slug);
+  const title = labelFor(item.slug);
   const kindFor = (path) =>
     path.includes('members')
       ? 'team'
@@ -250,20 +250,6 @@ export default function VisualPageEditor({ item, onSave, onClose, onAddEvent }) 
         </div>
       </div>
       <div className="actions visual-quick-actions">
-        {item.slug === 'about' && (
-          <button
-            className="button gold"
-            onClick={() =>
-              add(
-                ['config', 'team', 'members'],
-                defaults.config.team.members[0],
-                'Add new team member',
-              )
-            }
-          >
-            Add new team member
-          </button>
-        )}
         {item.slug === 'coaching' && (
           <button
             className="button gold"

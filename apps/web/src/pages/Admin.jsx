@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AdminModal from '../components/AdminModal';
+import TeamManager from '../components/TeamManager';
 import { RegistrationDetailsForm } from '../components/EventRegistration';
 import AdminPreview from '../components/AdminPreview';
 import ImageUpload from '../components/ImageUpload';
@@ -466,7 +467,7 @@ function ContentManager({ kind, initiallyCreate = false }) {
       )}
       {kind === 'pages' && (
         <p>
-          Use Home, About & team, Coaching page and Events page to edit the live sections. Event
+          Use the page editors to edit live sections and Team members to manage profiles. Event
           listings are managed separately under Events. Extra pages are accessible at
           /pages/your-slug.
         </p>
@@ -808,9 +809,11 @@ export default function Admin() {
       items: [
         { id: 'page:header', label: 'Header & navigation' },
         { id: 'page:home', label: 'Home' },
-        { id: 'page:about', label: 'About & team' },
+        { id: 'page:about', label: 'About page' },
         { id: 'page:coaching', label: 'Coaching page' },
         { id: 'page:events', label: 'Events page' },
+        { id: 'page:contact', label: 'Contact page' },
+        { id: 'page:gallery', label: 'Gallery page' },
         { id: 'pages', label: 'Other pages' },
         { id: 'footer', label: 'Footer' },
         { id: 'gallery', label: 'Gallery' },
@@ -824,7 +827,13 @@ export default function Admin() {
         { id: 'plans', label: 'Membership plans' },
       ],
     },
-    { label: 'People', items: [{ id: 'members', label: 'Members & access' }] },
+    {
+      label: 'People',
+      items: [
+        { id: 'team', label: 'Team members' },
+        { id: 'members', label: 'Members & access' },
+      ],
+    },
   ];
   return (
     <section className="section">
@@ -863,6 +872,8 @@ export default function Admin() {
             <Overview />
           ) : tab === 'members' ? (
             <MemberManager />
+          ) : tab === 'team' ? (
+            <TeamManager />
           ) : tab === 'footer' ? (
             <FooterManager />
           ) : (

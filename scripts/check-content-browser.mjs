@@ -384,15 +384,17 @@ try {
 
     await navigate('/admin');
     await until('!!document.querySelector(".admin-nav")');
-    await tab('About & team');
-    await editCard('config.team.members');
+    await tab('Team members');
+    await until('!!document.querySelector(".admin-main .visual-toolbar button")');
+    await evaluate('document.querySelector(".admin-main .visual-toolbar button").click()');
+    await until('!!document.querySelector(".admin-modal[open]")');
     await fill('Full name', 'Updated Team Leader');
     const teamImage = await uploadImage();
     await change(
       'const a=Array.from(form.querySelectorAll("fieldset")).find(f=>f.querySelector(":scope > legend")?.textContent==="Achievements");set(a.querySelector("textarea"),"Achievement from visual editor");',
     );
     await save();
-    await click('Add new team member');
+    await click('Add team member');
     await fill('Full name', 'New Visual Team Member');
     await fill('Role', 'Event coordinator');
     await change('field("Published on website").click();');
@@ -566,9 +568,9 @@ try {
     await save();
     console.log('PASS: Header/menu previews, errors above modal, correction and retry.');
 
-    await tab('About & team');
+    await tab('Team members');
     await wait(2200);
-    await evaluate('document.querySelector(".visual-collection").scrollIntoView({block:"start"})');
+    await evaluate('document.querySelector(".visual-card-grid").scrollIntoView({block:"start"})');
     fs.writeFileSync(
       path.join(os.tmpdir(), 'gvk-visual-admin-desktop.png'),
       Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'),
@@ -589,7 +591,9 @@ try {
       path.join(os.tmpdir(), 'gvk-visual-admin-mobile.png'),
       Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'),
     );
-    await editCard('config.team.members');
+    await until('!!document.querySelector(".admin-main .visual-toolbar button")');
+    await evaluate('document.querySelector(".admin-main .visual-toolbar button").click()');
+    await until('!!document.querySelector(".admin-modal[open]")');
     assert.equal(
       await evaluate(
         'document.querySelector(".admin-modal").scrollWidth>document.querySelector(".admin-modal").clientWidth',

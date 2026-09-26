@@ -1,4 +1,4 @@
-import { db } from '../db/index.js';
+import { store } from '../db/index.js';
 import { hashPassword } from '../modules/auth.js';
 import { signup, parse } from '../modules/schemas.js';
 const v = parse(signup, {
@@ -6,11 +6,17 @@ const v = parse(signup, {
   email: process.env.ADMIN_EMAIL,
   password: process.env.ADMIN_PASSWORD,
 });
-if (db.prepare('SELECT 1 FROM users WHERE email=?').get(v.email))
+if (
+  await store.one('users', {
+    email: v.email,
+  })
+)
   throw new Error('Account already exists; no account was modified.');
-db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-  v.name,
-  v.email,
-  await hashPassword(v.password),
-);
+await store.insert('users', {
+  name: v.name,
+  email: v.email,
+  password: await hashPassword(v.password),
+  role: 'admin',
+});
 console.log('Administrator created. Remove ADMIN_PASSWORD from your environment.');
+await store.close();

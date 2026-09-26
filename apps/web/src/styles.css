@@ -1375,8 +1375,8 @@ body:has(.registration-modal[open]) {
 
 .gallery img {
   width: 100%;
-  max-height: 380px;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
@@ -2489,7 +2489,7 @@ main {
 }
 
 .event-card-media {
-  height: 170px;
+  height: 250px;
   margin: -28px -28px 22px;
   border-radius: 14px 14px 0 0;
   background-position: center;

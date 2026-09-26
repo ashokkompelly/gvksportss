@@ -107,6 +107,7 @@ export function newEntry(template) {
       ]),
     );
   if (typeof template === 'boolean') return template;
+  if (typeof template === 'number') return 0;
   return '';
 }
 export function Fields({ value, template, onChange, onItemAdded, path = 'config' }) {
@@ -261,6 +262,20 @@ export function Fields({ value, template, onChange, onItemAdded, path = 'config'
           <label className="field check" key={key}>
             <input type="checkbox" checked={current} onChange={(e) => update(e.target.checked)} />
             <span>{label}</span>
+          </label>
+        );
+      if (typeof sample === 'number')
+        return (
+          <label className="field" key={key}>
+            <span>{label}</span>
+            <input
+              type="number"
+              min="0"
+              max="10000"
+              step="1"
+              value={current}
+              onChange={(event) => update(Number(event.target.value))}
+            />
           </label>
         );
       if (key === 'image')

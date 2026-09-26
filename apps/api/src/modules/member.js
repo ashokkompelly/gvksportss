@@ -1,57 +1,84 @@
 import { Router } from 'express';
-import { db, resource, transaction } from '../db/index.js';
+import { resource, transaction, store, joined as joinedRecords } from '../db/index.js';
 import { authenticated } from './auth.js';
 import { id, fail } from './schemas.js';
 export const member = Router();
 member.use(authenticated);
-function active(user) {
-  return db
-    .prepare("SELECT 1 FROM memberships WHERE user_id=? AND status='active' AND valid_until>?")
-    .get(user, new Date().toISOString());
+async function active(user) {
+  return await store.one('memberships', {
+    user_id: user,
+    status: 'active',
+    valid_until: {
+      $gt: new Date().toISOString(),
+    },
+  });
 }
-member.get('/', (req, res) => {
-  const joined = (table, key) =>
-    db
-      .prepare(
-        `SELECT t.*,r.data FROM ${table} t JOIN resources r ON r.id=t.${key} WHERE user_id=? ORDER BY t.id DESC`,
-      )
-      .all(req.user.id)
-      .map((r) => ({ ...r, item: JSON.parse(r.data), data: undefined }));
-  db.prepare(
-    "UPDATE memberships SET status='cancelled' WHERE user_id=? AND status='active' AND valid_until IS NOT NULL AND valid_until<=?",
-  ).run(req.user.id, new Date().toISOString());
+member.get('/', async (req, res) => {
+  const joined = async (table, key) =>
+    (await joinedRecords(table, key, req.user.id)).map((r) => ({
+      ...r,
+      item: JSON.parse(r.data),
+      data: undefined,
+    }));
+  await store.update(
+    'memberships',
+    {
+      $and: [
+        {
+          user_id: req.user.id,
+        },
+        {
+          status: 'active',
+        },
+        {
+          valid_until: {
+            $ne: null,
+          },
+        },
+        {
+          valid_until: {
+            $lte: new Date().toISOString(),
+          },
+        },
+      ],
+    },
+    {
+      status: 'cancelled',
+    },
+  );
   res.json({
-    bookings: joined('bookings', 'slot_id'),
-    registrations: joined('registrations', 'event_id'),
-    memberships: joined('memberships', 'plan_id'),
+    bookings: await joined('bookings', 'slot_id'),
+    registrations: await joined('registrations', 'event_id'),
+    memberships: await joined('memberships', 'plan_id'),
   });
 });
 for (const [route, kind, table, key] of [
   ['bookings', 'slots', 'bookings', 'slot_id'],
   ['registrations', 'events', 'registrations', 'event_id'],
 ]) {
-  member.post('/' + route, (req, res) => {
+  member.post('/' + route, async (req, res) => {
     const target = id(req.body.id);
-    transaction(() => {
-      const item = resource(target, kind);
+    await transaction(async () => {
+      const item = await resource(target, kind);
       if (!item?.published) fail(404, 'This session or event is unavailable.');
       if (new Date(item.start) <= new Date()) fail(409, 'Registration has closed.');
-      if (item.membersOnly && !active(req.user.id)) fail(403, 'An active membership is required.');
+      if (item.membersOnly && !(await active(req.user.id)))
+        fail(403, 'An active membership is required.');
       if (
-        db.prepare(`SELECT 1 FROM ${table} WHERE user_id=? AND ${key}=?`).get(req.user.id, target)
+        await store.one(table, {
+          user_id: req.user.id,
+          [key]: target,
+        })
       )
         fail(409, 'You have already reserved this place.');
       if (
-        db.prepare(`SELECT count(*) AS n FROM ${table} WHERE ${key}=?`).get(target).n >=
-        item.capacity
+        (await store.count(table, {
+          [key]: target,
+        })) >= item.capacity
       )
         fail(409, 'No places remaining.');
       if (kind === 'slots') {
-        const others = db
-          .prepare(
-            'SELECT r.data FROM bookings b JOIN resources r ON r.id=b.slot_id WHERE b.user_id=?',
-          )
-          .all(req.user.id);
+        const others = await joinedRecords('bookings', 'slot_id', req.user.id);
         if (
           others.some((r) => {
             const o = JSON.parse(r.data);
@@ -60,41 +87,77 @@ for (const [route, kind, table, key] of [
         )
           fail(409, 'This time overlaps another booking.');
       }
-      db.prepare(`INSERT INTO ${table}(user_id,${key}) VALUES(?,?)`).run(req.user.id, target);
+      await store.insert(table, {
+        user_id: req.user.id,
+        [key]: target,
+      });
     });
-    res.status(201).json({ ok: true });
+    res.status(201).json({
+      ok: true,
+    });
   });
-  member.delete('/' + route + '/:id', (req, res) => {
-    const result = db
-      .prepare(`DELETE FROM ${table} WHERE id=? AND user_id=?`)
-      .run(id(req.params.id), req.user.id);
+  member.delete('/' + route + '/:id', async (req, res) => {
+    const result = await store.remove(table, {
+      id: id(req.params.id),
+      user_id: req.user.id,
+    });
     if (!result.changes) fail(404, 'Reservation not found.');
-    res.json({ ok: true });
+    res.json({
+      ok: true,
+    });
   });
 }
-member.post('/memberships', (req, res) => {
-  transaction(() => {
-    const plan = resource(id(req.body.id), 'plans');
+member.post('/memberships', async (req, res) => {
+  await transaction(async () => {
+    const plan = await resource(id(req.body.id), 'plans');
     if (!plan?.published) fail(404, 'Plan unavailable.');
-    db.prepare(
-      "UPDATE memberships SET status='cancelled' WHERE user_id=? AND status='active' AND valid_until<=?",
-    ).run(req.user.id, new Date().toISOString());
+    await store.update(
+      'memberships',
+      {
+        user_id: req.user.id,
+        status: 'active',
+        valid_until: {
+          $lte: new Date().toISOString(),
+        },
+      },
+      {
+        status: 'cancelled',
+      },
+    );
     if (
-      db
-        .prepare("SELECT 1 FROM memberships WHERE user_id=? AND status IN ('active','pending')")
-        .get(req.user.id)
+      await store.one('memberships', {
+        user_id: req.user.id,
+        status: {
+          $in: ['active', 'pending'],
+        },
+      })
     )
       fail(409, 'You already have an active or pending membership.');
-    db.prepare('INSERT INTO memberships(user_id,plan_id) VALUES(?,?)').run(req.user.id, plan.id);
+    await store.insert('memberships', {
+      user_id: req.user.id,
+      plan_id: plan.id,
+    });
   });
-  res.status(201).json({ ok: true });
+  res.status(201).json({
+    ok: true,
+  });
 });
-member.delete('/memberships/:id', (req, res) => {
-  const r = db
-    .prepare(
-      "UPDATE memberships SET status='cancelled' WHERE id=? AND user_id=? AND status IN ('active','pending')",
-    )
-    .run(id(req.params.id), req.user.id);
+member.delete('/memberships/:id', async (req, res) => {
+  const r = await store.update(
+    'memberships',
+    {
+      id: id(req.params.id),
+      user_id: req.user.id,
+      status: {
+        $in: ['active', 'pending'],
+      },
+    },
+    {
+      status: 'cancelled',
+    },
+  );
   if (!r.changes) fail(404, 'Membership not found.');
-  res.json({ ok: true });
+  res.json({
+    ok: true,
+  });
 });

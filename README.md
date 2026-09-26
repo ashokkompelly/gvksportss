@@ -12,9 +12,11 @@ cp .env.development.example .env.development
 npm run dev
 ```
 
-Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. Development reads only `.env.development` and creates `data/gvk-development.sqlite`. Relative database paths resolve from the project root. Windows users can copy `.env.development.example` to `.env.development` in Explorer instead of running `cp`.
+Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. Development reads only `.env.development`. With `DATABASE_PROVIDER=sqlite`, it uses `data/gvk-development.sqlite`; with `DATABASE_PROVIDER=mongodb`, it uses the configured Atlas database. Relative database paths resolve from the project root. Windows users can copy `.env.development.example` to `.env.development` in Explorer instead of running `cp`.
 
-Production (`npm start`) reads `.env`; use `.env.example` as its template. Keep its database path and other settings separate from development. Both environment files and the local databases are ignored by Git. Restart the development server after changing environment settings.
+Production (`npm start`) reads `.env`; use `.env.example` as its template. Set the same Atlas connection in both environment files to share live data. Both environment files are ignored by Git. Restart the development server after changing environment settings.
+
+For Atlas connection, migration, backup, and hosting instructions, see [MongoDB setup](docs/mongodb.md).
 
 ## Create your first administrator
 
@@ -82,25 +84,25 @@ To serve the built app locally from Node, set `APP_ORIGIN=http://localhost:3000`
 
 For GoDaddy Node.js hosting, use `npm run build` as the build command and `npm start` as the startup command. Set `NODE_ENV=production`, set `APP_ORIGIN` to the hosted HTTPS URL, and do not start Vite separately. The production Node process serves the built frontend and API on the hosting provider's `PORT` value.
 
-For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, choose a persistent `DATABASE_PATH`, build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. Do not use an ephemeral filesystem for the database. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
+For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, configure Atlas (or a persistent `DATABASE_PATH` for SQLite), build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. SQLite mode requires persistent disk storage. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
 
 ## Security implemented
 
 Async scrypt password hashing with random salts; random opaque session tokens with hashed database storage; HttpOnly, SameSite cookies and Secure cookies in production; seven-day expiry; server logout invalidation; exact Origin enforcement on API writes; schema validation; parameterized SQL; auth/enquiry throttling; Helmet response headers; no authenticated response caching; ownership checks on member actions; no administrator self-signup; bounded request sizes.
 
-Before a public launch, add verified email/password reset, automated backups and recovery testing, monitoring, approved privacy/terms and parental-account rules, and deployment-specific hardening. High-volume or multiple-server deployments should move to PostgreSQL and a shared rate limiter. Sessions currently have an absolute expiry, without sliding refresh.
+Before a public launch, add verified email/password reset, automated backups and recovery testing, monitoring, approved privacy/terms and parental-account rules, and deployment-specific hardening. Multiple-server deployments should use the shared Atlas backend and a shared rate limiter. Sessions currently have an absolute expiry, without sliding refresh.
 
 ## Current limits
 
-- Local SQLite is for a single persistent Node process. PostgreSQL is the recommended production target when scaling.
-- Admin image fields support direct JPG, PNG and WebP uploads (up to 10 MB), with previews and replacement. Configure persistent storage for `UPLOAD_DIR`; see [image upload setup](docs/image-uploads.md). Video management is not included.
+- Local SQLite is for a single persistent Node process. Atlas supports shared records and images across instances; writes are serialized to preserve booking constraints.
+- Admin image fields support direct JPG, PNG and WebP uploads (up to 10 MB), with previews and replacement. MongoDB mode stores uploads in GridFS. In SQLite mode, configure persistent storage for `UPLOAD_DIR`; see [image upload setup](docs/image-uploads.md). Video management is not included.
 - Membership is a manual request/approval flow; no payments, subscriptions, refunds or automated renewals.
 - No email/SMS/WhatsApp sending, password reset or email verification yet.
 - Booking cancellation is currently allowed anytime. Define cutoff/refund rules before launch.
 - No coach management, recurring batches, attendance, court-resource conflict detection, parent/child profiles or tournament scoring yet.
 - Sessions/events with reservations cannot change timing, venue, sport or access rules. Linked records cannot be deleted; unpublish instead.
 - PWA provides installation metadata and an offline message. Viewing live data, booking and account operations require connectivity; push notifications are not implemented.
-- The supplied team names are initial content in About; extend the CMS with a team module if these need admin editing.
+- Team profiles, photos, achievements, visibility and ordering are managed under Admin ? Team members. Contact and Gallery page copy have dedicated page editors.
 - Content editor uses plain text. SEO prerendering/SSR and per-page metadata can follow before broader public marketing.
 
 See `docs/REQUIREMENTS.md` for decisions to collect next.

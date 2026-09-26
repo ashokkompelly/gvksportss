@@ -1,59 +1,57 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import path from 'node:path';
-import { config } from '../config/env.js';
-mkdirSync(path.dirname(config.database), { recursive: true });
-export const db = new DatabaseSync(config.database);
-db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL;
-CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'member' CHECK(role IN ('member','admin')), created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS resources(id INTEGER PRIMARY KEY,kind TEXT NOT NULL,data TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS bookings(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id),slot_id INTEGER NOT NULL REFERENCES resources(id),created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(user_id,slot_id));
-CREATE TABLE IF NOT EXISTS registrations(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id),event_id INTEGER NOT NULL REFERENCES resources(id),created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(user_id,event_id));
-CREATE TABLE IF NOT EXISTS memberships(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id),plan_id INTEGER NOT NULL REFERENCES resources(id),status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','active','cancelled')),valid_until TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE UNIQUE INDEX IF NOT EXISTS one_open_membership ON memberships(user_id) WHERE status IN ('pending','active');
-CREATE TABLE IF NOT EXISTS enquiries(id INTEGER PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL,organization TEXT,message TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,user_id INTEGER,action TEXT NOT NULL,entity_id INTEGER,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY);
-`);
-export function transaction(fn) {
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    const result = fn();
-    db.exec('COMMIT');
-    return result;
-  } catch (e) {
-    db.exec('ROLLBACK');
-    throw e;
-  }
-}
-// Rebuild the legacy member-only table once, preserving registration IDs and dates.
-if (
-  !db
-    .prepare('PRAGMA table_info(registrations)')
-    .all()
-    .some((column) => column.name === 'phone')
-) {
-  transaction(() =>
-    db.exec(`
-    CREATE TABLE registrations_next(id INTEGER PRIMARY KEY,user_id INTEGER REFERENCES users(id),event_id INTEGER NOT NULL REFERENCES resources(id),name TEXT,phone TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(user_id,event_id),UNIQUE(event_id,phone));
-    INSERT INTO registrations_next(id,user_id,event_id,created_at) SELECT id,user_id,event_id,created_at FROM registrations;
-    DROP TABLE registrations;
-    ALTER TABLE registrations_next RENAME TO registrations;
-  `),
-  );
-}
-export function resource(id, kind) {
-  const row = db.prepare('SELECT * FROM resources WHERE id=? AND kind=?').get(id, kind);
+import { mongoStore, sqliteStore } from './store.js';
+const provider = process.env.DATABASE_PROVIDER || 'sqlite';
+if (!['sqlite', 'mongodb'].includes(provider)) throw new Error('Invalid DATABASE_PROVIDER');
+const useMongo = provider === 'mongodb';
+if (useMongo && !process.env.MONGODB_URI) throw new Error('MONGODB_URI is required for MongoDB.');
+const sqlite = useMongo ? null : await import('./sqlite.js');
+export const db = sqlite?.db;
+export const store = useMongo
+  ? await mongoStore(process.env.MONGODB_URI, process.env.MONGODB_DATABASE || 'gvksportss')
+  : sqliteStore(db);
+export const transaction = (fn) => store.transaction(fn);
+export const closeDatabase = () => store.close();
+export const constraintError = (e) =>
+  e.code === 11000 || e.code === 'LINKED_RECORDS' || String(e.code).startsWith('ERR_SQLITE');
+export const likePattern = (value) =>
+  value.replace(/^%|%$/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export async function resource(id, kind) {
+  const row = await store.one('resources', { id, kind });
   return row ? { id: row.id, ...JSON.parse(row.data) } : null;
 }
-export function resources(kind, all = false) {
-  return db
-    .prepare('SELECT * FROM resources WHERE kind=? ORDER BY id')
-    .all(kind)
+export async function resources(kind, all = false) {
+  const items = (await store.all('resources', { kind }, { id: 1 }))
     .map((r) => ({ id: r.id, ...JSON.parse(r.data) }))
     .filter((r) => all || r.published);
+  return kind === 'team' ? items.sort((a, b) => a.order - b.order || a.id - b.id) : items;
 }
-export function audit(user, action, id) {
-  db.prepare('INSERT INTO audit(user_id,action,entity_id) VALUES(?,?,?)').run(user.id, action, id);
+export async function audit(user, action, id) {
+  await store.insert('audit', { user_id: user.id, action, entity_id: id });
+}
+export async function sessionUser(token, expires) {
+  const session = await store.one('sessions', { token, expires: { $gt: expires } });
+  return session
+    ? store.one('users', { id: session.user_id }, ['id', 'name', 'email', 'role'])
+    : null;
+}
+export async function joined(table, key, userId, includeUser = false) {
+  const rows = await store.all(table, userId === undefined ? {} : { user_id: userId }, { id: -1 });
+  const result = [];
+  for (const row of rows) {
+    const item = await store.one('resources', { id: row[key] });
+    if (!item) continue;
+    if (includeUser) {
+      const user =
+        row.user_id == null
+          ? null
+          : await store.one('users', { id: row.user_id }, ['name', 'email']);
+      if (!user && table !== 'registrations') continue;
+      result.push({
+        ...row,
+        name: row.name ?? user?.name ?? null,
+        email: user?.email ?? null,
+        data: item.data,
+      });
+    } else result.push({ ...row, data: item.data });
+  }
+  return result;
 }

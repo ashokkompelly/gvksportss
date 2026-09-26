@@ -1,17 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 
 test('Admin image uploads validate files, persist images and serve them publicly', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'gvk-uploads-'));
-  process.env.DATABASE_PATH = path.join(temp, 'test.sqlite');
-  process.env.UPLOAD_DIR = path.join(temp, 'uploads');
+  process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
   process.env.NODE_ENV = 'test';
   const { app } = await import('../apps/api/src/app.js');
-  const { db } = await import('../apps/api/src/db/index.js');
+  const { store } = await import('../apps/api/src/db/index.js');
   const { hashPassword } = await import('../apps/api/src/modules/auth.js');
   const server = app.listen(0, '127.0.0.1');
   await new Promise((resolve) => server.once('listening', resolve));
@@ -28,18 +28,18 @@ test('Admin image uploads validate files, persist images and serve them publicly
       body,
     });
   try {
-    db.prepare('INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)').run(
-      'Upload Admin',
-      'uploads@example.com',
-      await hashPassword('upload-test-password'),
-      'admin',
-    );
-    db.prepare('INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)').run(
-      'Member',
-      'member@example.com',
-      await hashPassword('upload-test-password'),
-      'member',
-    );
+    await store.insert('users', {
+      name: 'Upload Admin',
+      email: 'uploads@example.com',
+      password: await hashPassword('upload-test-password'),
+      role: 'admin',
+    });
+    await store.insert('users', {
+      name: 'Member',
+      email: 'member@example.com',
+      password: await hashPassword('upload-test-password'),
+      role: 'member',
+    });
     const login = async (email) => {
       const response = await fetch(origin + '/api/auth/login', {
         method: 'POST',
@@ -81,11 +81,12 @@ test('Admin image uploads validate files, persist images and serve them publicly
     assert.equal(event.status, 201);
     const catalog = await (await fetch(origin + '/api/catalog/events')).json();
     assert.equal(catalog.find((item) => item.title === 'Uploaded event').image, saved.url);
-    assert.equal((await readdir(process.env.UPLOAD_DIR)).length, 1);
+    assert.equal(await store.database.collection('uploads.files').countDocuments(), 1);
     assert.equal((await fetch(origin + '/uploads/missing.webp')).status, 404);
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    db.close();
+    await store.database.dropDatabase();
+    await store.close();
     assert.ok(path.resolve(temp).startsWith(path.resolve(os.tmpdir()) + path.sep));
     await rm(temp, { recursive: true, force: true });
   }

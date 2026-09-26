@@ -1,4 +1,5 @@
-﻿import test from 'node:test';
+import { randomUUID } from 'node:crypto';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -6,10 +7,10 @@ import path from 'node:path';
 import { pageDefaults, mergeContent } from '../shared/siteContent.js';
 
 const temp = mkdtempSync(path.join(os.tmpdir(), 'gvk-content-'));
-process.env.DATABASE_PATH = path.join(temp, 'content.sqlite');
+process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
 process.env.APP_ORIGIN = 'http://localhost:5173';
 const { app } = await import('../apps/api/src/app.js');
-const { db } = await import('../apps/api/src/db/index.js');
+const { store } = await import('../apps/api/src/db/index.js');
 const { hashPassword } = await import('../apps/api/src/modules/auth.js');
 const server = app.listen(0);
 await new Promise((resolve) => server.once('listening', resolve));
@@ -34,14 +35,16 @@ async function request(route, method = 'GET', body, authenticated = true) {
 test('Managed page content stays in sync with the public catalog', async (t) => {
   t.after(async () => {
     await new Promise((resolve) => server.close(resolve));
-    db.close();
+    await store.database.dropDatabase();
+    await store.close();
     rmSync(temp, { recursive: true, force: true });
   });
-  db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-    'Content Admin',
-    'content@example.com',
-    await hashPassword('content-test-password'),
-  );
+  await store.insert('users', {
+    name: 'Content Admin',
+    email: 'content@example.com',
+    password: await hashPassword('content-test-password'),
+    role: 'admin',
+  });
   cookie = (
     await request('/auth/login', 'POST', {
       email: 'content@example.com',

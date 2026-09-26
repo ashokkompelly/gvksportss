@@ -1,4 +1,4 @@
-﻿// End-to-end CMS check against an isolated database; never edits the working site's data.
+import { randomUUID } from 'node:crypto'; // End-to-end CMS check against an isolated database; never edits the working site's data.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -7,17 +7,17 @@ import { spawn } from 'node:child_process';
 import express from 'express';
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gvk-cms-browser-'));
-process.env.DATABASE_PATH = path.join(temp, 'preview.sqlite');
+process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_PROVIDER = 'sqlite';
 const { app } = await import('../apps/api/src/app.js');
-const { db } = await import('../apps/api/src/db/index.js');
+const { store } = await import('../apps/api/src/db/index.js');
 const { hashPassword } = await import('../apps/api/src/modules/auth.js');
-db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-  'CMS Browser Test',
-  'cms-browser@example.com',
-  await hashPassword('temporary-cms-browser-password'),
-);
+await store.insert('users', {
+  name: 'CMS Browser Test',
+  email: 'cms-browser@example.com',
+  password: await hashPassword('temporary-cms-browser-password'),
+  role: 'admin',
+});
 app.use(express.static(path.resolve('apps/web/dist')));
 app.get('/{*path}', (req, res) => res.sendFile(path.resolve('apps/web/dist/index.html')));
 const server = app.listen(0, '127.0.0.1');
@@ -131,7 +131,12 @@ try {
   };
   await until('location.origin === ' + JSON.stringify(origin));
   await evaluate('sessionStorage.setItem("gvk-launch-seen-v1","yes")');
-  assert.equal(await evaluate('(async ()=>(await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"cms-browser@example.com",password:"temporary-cms-browser-password"})})).status)()'), 200);
+  assert.equal(
+    await evaluate(
+      '(async ()=>(await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"cms-browser@example.com",password:"temporary-cms-browser-password"})})).status)()',
+    ),
+    200,
+  );
   await navigate('/admin');
   await until('!!document.querySelector(".admin-nav")');
   await tab('Team members');
@@ -140,17 +145,26 @@ try {
   await until('!!document.querySelector(".admin-modal[open]")');
   await fill('Full name', 'Browser Edited Profile');
   await save();
-  await until('document.querySelector(".admin-main").textContent.includes("Browser Edited Profile")');
+  await until(
+    'document.querySelector(".admin-main").textContent.includes("Browser Edited Profile")',
+  );
   await click('Move down');
-  await until('document.querySelectorAll(".admin-main .visual-editable")[1].textContent.includes("Browser Edited Profile")');
+  await until(
+    'document.querySelectorAll(".admin-main .visual-editable")[1].textContent.includes("Browser Edited Profile")',
+  );
   await navigate('/about');
   await until('document.querySelector("main").textContent.includes("Browser Edited Profile")');
   assert.equal(await evaluate('document.querySelectorAll(".coach-card").length'), 5);
-  await navigate('/admin'); await until('!!document.querySelector(".admin-nav")');
+  await navigate('/admin');
+  await until('!!document.querySelector(".admin-nav")');
   await tab('Team members');
   await until('document.querySelectorAll(".admin-main .visual-editable").length === 5');
-  await evaluate('Array.from(document.querySelectorAll(".admin-main .visual-editable")).find(card=>card.textContent.includes("Browser Edited Profile")).querySelectorAll(".visual-item-actions button")[2].click()');
-  await until('Array.from(document.querySelectorAll(".admin-main .visual-editable")).find(card=>card.textContent.includes("Browser Edited Profile")).querySelector(".badge").textContent === "Hidden"');
+  await evaluate(
+    'Array.from(document.querySelectorAll(".admin-main .visual-editable")).find(card=>card.textContent.includes("Browser Edited Profile")).querySelectorAll(".visual-item-actions button")[2].click()',
+  );
+  await until(
+    'Array.from(document.querySelectorAll(".admin-main .visual-editable")).find(card=>card.textContent.includes("Browser Edited Profile")).querySelector(".badge").textContent === "Hidden"',
+  );
   await tab('Contact page');
   await click('Edit page settings');
   await fill('Title', 'Browser Contact Heading');
@@ -166,16 +180,32 @@ try {
   await until('document.querySelector("h1")?.textContent === "Browser Gallery Heading"');
   await navigate('/about');
   await until('document.querySelectorAll(".coach-card").length === 4');
-  assert.equal(await evaluate('document.querySelector("main").textContent.includes("Browser Edited Profile")'), false);
-  await send('Emulation.setDeviceMetricsOverride', {width:390,height:844,deviceScaleFactor:1,mobile:true});
-  await navigate('/admin'); await until('!!document.querySelector(".admin-nav")');
+  assert.equal(
+    await evaluate('document.querySelector("main").textContent.includes("Browser Edited Profile")'),
+    false,
+  );
+  await send('Emulation.setDeviceMetricsOverride', {
+    width: 390,
+    height: 844,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await navigate('/admin');
+  await until('!!document.querySelector(".admin-nav")');
   await tab('Team members');
   await until('document.querySelectorAll(".admin-main .visual-editable").length === 5');
   await evaluate('document.querySelector(".admin-main .visual-toolbar button").click()');
   await until('!!document.querySelector(".admin-modal[open]")');
-  assert.equal(await evaluate('document.querySelector(".admin-modal").scrollWidth > document.querySelector(".admin-modal").clientWidth'), false);
+  assert.equal(
+    await evaluate(
+      'document.querySelector(".admin-modal").scrollWidth > document.querySelector(".admin-modal").clientWidth',
+    ),
+    false,
+  );
   assert.deepEqual(errors, [], 'No browser runtime errors');
-  console.log('PASS: Team editing, ordering, hiding, public profiles, Contact/Gallery edits, and mobile editor layout.');
+  console.log(
+    'PASS: Team editing, ordering, hiding, public profiles, Contact/Gallery edits, and mobile editor layout.',
+  );
   await send('Browser.close');
   ws.close();
 } finally {
@@ -185,7 +215,8 @@ try {
     await Promise.race([new Promise((resolve) => browser.once('exit', resolve)), wait(1500)]);
   }
   await new Promise((resolve) => server.close(resolve));
-  db.close();
+  await store.database.dropDatabase();
+  await store.close();
   assert.ok(path.resolve(temp).startsWith(path.resolve(os.tmpdir()) + path.sep));
   fs.rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

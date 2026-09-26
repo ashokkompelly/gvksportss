@@ -1,8 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import sharp from 'sharp';
-import { config } from '../config/env.js';
 import { audit, store } from '../db/index.js';
 import { saveMedia, readMedia } from '../db/media.js';
 import { fail } from './schemas.js';
@@ -34,20 +31,14 @@ export async function uploadImage(req, res) {
     );
   }
   const filename = randomUUID() + '.webp';
-  if (store.backend === 'mongodb') {
-    await saveMedia(store.database, filename, result.data);
-  } else {
-    await mkdir(config.uploads, { recursive: true });
-    await writeFile(path.join(config.uploads, filename), result.data, { flag: 'wx' });
-  }
+  await saveMedia(store.database, filename, result.data);
   await audit(req.user, 'image:upload', filename);
   res
     .status(201)
     .json({ url: '/uploads/' + filename, width: result.info.width, height: result.info.height });
 }
 
-export async function serveMongoImage(req, res, next) {
-  if (store.backend !== 'mongodb') return next();
+export async function serveMongoImage(req, res) {
   if (!/^\/[a-zA-Z0-9_.-]+$/.test(req.path)) return res.sendStatus(404);
   const image = await readMedia(store.database, req.path.slice(1));
   if (!image) return res.sendStatus(404);

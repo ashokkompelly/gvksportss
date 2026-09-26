@@ -44,7 +44,7 @@ Installation and features vary across platforms and browsers. An installable res
 ## Recommended phases
 
 - Foundation (this delivery): modular app, real auth, CMS, manual memberships, slots and events.
-- Operational launch: confirm rules/content, PostgreSQL if required, media storage/uploads, email verification/reset, guardian profiles as applicable, staging, backups, monitoring and deployment.
+- Operational launch: confirm rules/content, MongoDB Atlas, media storage/uploads, email verification/reset, guardian profiles as applicable, staging, backups, monitoring and deployment.
 - Payments and communication: verified payment orders/webhooks, entitlements, invoices/refunds and opt-in reminders.
 - Coaching operations: coaches, recurring batches, attendance, learner progress, waitlists, venue/court schedules and results.
 - Native app only if justified: consider when app-store distribution, reliable platform integrations or sustained daily use make the added maintenance worthwhile.
@@ -55,4 +55,4 @@ Use one repository with independently deployable frontend and API packages. Keep
 
 ## Entity relationships
 
-Users own sessions, bookings, event registrations and membership requests. Bookings reference coaching sessions. Registrations reference events. Memberships reference plans. Public/admin content resides in typed resource records in this initial SQLite schema. Move these into dedicated relational tables during a PostgreSQL migration as operational reporting grows. Audit records track administrator changes.
+Users own sessions, bookings, event registrations and membership requests. Bookings reference coaching sessions. Registrations reference events. Memberships reference plans. Public/admin content resides in typed MongoDB collections. Audit records track administrator changes.

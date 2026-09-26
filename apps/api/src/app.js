@@ -38,7 +38,7 @@ app.use('/api', (req, res, next) => {
 app.use(express.json({ limit: '100kb' }));
 app.use(session);
 app.get('/api/health', async (req, res) => {
-  if (store.backend === 'mongodb') await store.database.command({ ping: 1 });
+  await store.database.command({ ping: 1 });
   res.json({ ok: true, database: store.backend });
 });
 app.use('/api/auth', auth);
@@ -47,17 +47,7 @@ app.use('/api/member', member);
 app.use('/api/admin', admin);
 app.use('/api/enquiries', enquiries);
 app.use('/api/registrations', registrations);
-app.use(
-  '/uploads',
-  serveMongoImage,
-  express.static(config.uploads, {
-    dotfiles: 'deny',
-    index: false,
-    maxAge: '1y',
-    immutable: true,
-    fallthrough: false,
-  }),
-);
+app.use('/uploads', serveMongoImage);
 app.use('/api', (req, res) => res.status(404).json({ error: 'API route not found' }));
 if (config.production) {
   app.use(express.static(path.join(root, 'apps/web/dist')));

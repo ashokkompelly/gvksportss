@@ -14,15 +14,13 @@
     "start": "npm start -w apps/api",
     "admin:create": "npm run admin:create -w apps/api",
     "admin:create:production": "npm run admin:create:production -w apps/api",
-    "db:export": "node scripts/export-database.mjs",
-    "test": "node --test tests/*.test.js",
+    "test": "node --env-file-if-exists=.env --import ./tests/setup.js --test --test-timeout=180000 tests/*.test.js",
     "format": "prettier --write .",
     "db:check": "node --env-file=.env scripts/check-mongodb.mjs",
-    "db:migrate:mongodb": "node --env-file=.env scripts/migrate-to-mongodb.mjs",
     "test:mongodb": "node --env-file=.env --test tests/mongodb.test.js",
     "db:organize-content": "node --env-file=.env scripts/organize-mongodb-content.mjs",
     "db:migrate:team-pages": "node --env-file=.env scripts/migrate-team-pages.mjs",
-    "test:team-pages:browser": "node scripts/check-team-pages-browser.mjs"
+    "test:team-pages:browser": "node --env-file=.env scripts/check-team-pages-browser.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",

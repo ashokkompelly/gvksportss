@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { app } from '../apps/api/src/app.js';
 import { store } from '../apps/api/src/db/index.js';
 
-assert.equal(store.backend, 'mongodb', 'This check requires DATABASE_PROVIDER=mongodb.');
+assert.equal(store.backend, 'mongodb', 'This check requires MongoDB.');
 const server = app.listen(0, '127.0.0.1');
 try {
   await new Promise((resolve) => server.once('listening', resolve));

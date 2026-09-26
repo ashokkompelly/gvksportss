@@ -1,31 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
 
-test('Guest registration migration, validation, capacity and admin management', async () => {
+test('Guest registration validation, capacity and admin management', async () => {
   const temp = mkdtempSync(path.join(os.tmpdir(), 'gvk-registration-'));
-  process.env.DATABASE_PATH = path.join(temp, 'test.sqlite');
+  process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
   process.env.APP_ORIGIN = 'http://localhost:5173';
-  // Exercise migration with an existing legacy registration.
-  const legacy = new DatabaseSync(process.env.DATABASE_PATH);
-  legacy.exec(`
-    CREATE TABLE users(id INTEGER PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL UNIQUE,password TEXT NOT NULL,role TEXT DEFAULT 'member',created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE resources(id INTEGER PRIMARY KEY,kind TEXT NOT NULL,data TEXT NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-    INSERT INTO users(id,name,email,password) VALUES(1,'Legacy member','legacy@example.com','unused');
-    INSERT INTO resources VALUES(1,'events','{"title":"Legacy event","published":false}',CURRENT_TIMESTAMP);
-    CREATE TABLE registrations(id INTEGER PRIMARY KEY,user_id INTEGER NOT NULL,event_id INTEGER NOT NULL,created_at TEXT,UNIQUE(user_id,event_id));
-    INSERT INTO registrations VALUES(42,1,1,'2025-01-01');
-  `);
-  legacy.close();
-  const { db } = await import('../apps/api/src/db/index.js');
-  assert.equal(
-    db.prepare('SELECT created_at FROM registrations WHERE id=42').get().created_at,
-    '2025-01-01',
-  );
-  db.prepare('DELETE FROM registrations WHERE id=42').run();
+  const { store } = await import('../apps/api/src/db/index.js');
   const { app } = await import('../apps/api/src/app.js');
   const { hashPassword } = await import('../apps/api/src/modules/auth.js');
   const server = app.listen(0);
@@ -47,11 +31,12 @@ test('Guest registration migration, validation, capacity and admin management', 
     };
   }
   try {
-    db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-      'Admin',
-      'registration-admin@example.com',
-      await hashPassword('registration-password'),
-    );
+    await store.insert('users', {
+      name: 'Admin',
+      email: 'registration-admin@example.com',
+      password: await hashPassword('registration-password'),
+      role: 'admin',
+    });
     const admin = await request('/auth/login', 'POST', {
       email: 'registration-admin@example.com',
       password: 'registration-password',
@@ -154,7 +139,8 @@ test('Guest registration migration, validation, capacity and admin management', 
     }
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    db.close();
+    await store.database.dropDatabase();
+    await store.close();
     rmSync(temp, { recursive: true, force: true });
   }
 });

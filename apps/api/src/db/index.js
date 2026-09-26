@@ -1,17 +1,13 @@
-import { mongoStore, sqliteStore } from './store.js';
-const provider = process.env.DATABASE_PROVIDER || 'sqlite';
-if (!['sqlite', 'mongodb'].includes(provider)) throw new Error('Invalid DATABASE_PROVIDER');
-const useMongo = provider === 'mongodb';
-if (useMongo && !process.env.MONGODB_URI) throw new Error('MONGODB_URI is required for MongoDB.');
-const sqlite = useMongo ? null : await import('./sqlite.js');
-export const db = sqlite?.db;
-export const store = useMongo
-  ? await mongoStore(process.env.MONGODB_URI, process.env.MONGODB_DATABASE || 'gvksportss')
-  : sqliteStore(db);
+import { mongoStore } from './store.js';
+if (!process.env.MONGODB_URI)
+  throw new Error('MONGODB_URI is required. Configure it in the active environment file.');
+export const store = await mongoStore(
+  process.env.MONGODB_URI,
+  process.env.MONGODB_DATABASE || 'gvk_db',
+);
 export const transaction = (fn) => store.transaction(fn);
 export const closeDatabase = () => store.close();
-export const constraintError = (e) =>
-  e.code === 11000 || e.code === 'LINKED_RECORDS' || String(e.code).startsWith('ERR_SQLITE');
+export const constraintError = (e) => e.code === 11000 || e.code === 'LINKED_RECORDS';
 export const likePattern = (value) =>
   value.replace(/^%|%$/g, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export async function resource(id, kind) {

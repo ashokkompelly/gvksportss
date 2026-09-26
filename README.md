@@ -9,10 +9,11 @@ Requires Node.js 24 or later and npm.
 ```bash
 npm install
 cp .env.development.example .env.development
+# Set MONGODB_URI in .env.development before starting.
 npm run dev
 ```
 
-Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. Development reads only `.env.development`. With `DATABASE_PROVIDER=sqlite`, it uses `data/gvk-development.sqlite`; with `DATABASE_PROVIDER=mongodb`, it uses the configured Atlas database. Relative database paths resolve from the project root. Windows users can copy `.env.development.example` to `.env.development` in Explorer instead of running `cp`.
+Open http://localhost:5173. Vite serves the React app and proxies `/api` to the Node API on port 3000. Development reads only `.env.development`. Set `MONGODB_URI` and `MONGODB_DATABASE` to connect to MongoDB Atlas. Windows users can copy `.env.development.example` to `.env.development` in Explorer instead of running `cp`.
 
 Production (`npm start`) reads `.env`; use `.env.example` as its template. Set the same Atlas connection in both environment files to share live data. Both environment files are ignored by Git. Restart the development server after changing environment settings.
 
@@ -84,7 +85,7 @@ To serve the built app locally from Node, set `APP_ORIGIN=http://localhost:3000`
 
 For GoDaddy Node.js hosting, use `npm run build` as the build command and `npm start` as the startup command. Set `NODE_ENV=production`, set `APP_ORIGIN` to the hosted HTTPS URL, and do not start Vite separately. The production Node process serves the built frontend and API on the hosting provider's `PORT` value.
 
-For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, configure Atlas (or a persistent `DATABASE_PATH` for SQLite), build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. SQLite mode requires persistent disk storage. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
+For a production Node host: use HTTPS, set `NODE_ENV=production`, set `APP_ORIGIN` to the exact public origin, configure MongoDB Atlas, build, and run `npm start`. HTTPS is necessary for Secure cookies and PWA features outside localhost. Do not enable proxy trust globally without configuring the exact trusted proxy topology. This starter's rate limit store is per process.
 
 ## Security implemented
 
@@ -94,8 +95,8 @@ Before a public launch, add verified email/password reset, automated backups and
 
 ## Current limits
 
-- Local SQLite is for a single persistent Node process. Atlas supports shared records and images across instances; writes are serialized to preserve booking constraints.
-- Admin image fields support direct JPG, PNG and WebP uploads (up to 10 MB), with previews and replacement. MongoDB mode stores uploads in GridFS. In SQLite mode, configure persistent storage for `UPLOAD_DIR`; see [image upload setup](docs/image-uploads.md). Video management is not included.
+- Atlas supports shared records and images across instances; writes are serialized to preserve booking constraints.
+- Admin image fields support direct JPG, PNG and WebP uploads (up to 10 MB), with previews and replacement. Uploads are stored in MongoDB GridFS; see [image upload setup](docs/image-uploads.md). Video management is not included.
 - Membership is a manual request/approval flow; no payments, subscriptions, refunds or automated renewals.
 - No email/SMS/WhatsApp sending, password reset or email verification yet.
 - Booking cancellation is currently allowed anytime. Define cutoff/refund rules before launch.
@@ -106,3 +107,5 @@ Before a public launch, add verified email/password reset, automated backups and
 - Content editor uses plain text. SEO prerendering/SSR and per-page metadata can follow before broader public marketing.
 
 See `docs/REQUIREMENTS.md` for decisions to collect next.
+
+Integration tests require a MongoDB replica set or Atlas connection in `MONGODB_URI` (`npm test` loads `.env`). They create and remove randomly named `gvk_test_*` databases; the database user needs permission to manage these test databases.

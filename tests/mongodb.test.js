@@ -12,7 +12,6 @@ test(
   async () => {
     // Never run fixtures against the user's database, even when .env is loaded.
     const testDatabase = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
-    process.env.DATABASE_PROVIDER = 'mongodb';
     process.env.MONGODB_DATABASE = testDatabase;
     process.env.NODE_ENV = 'development';
     process.env.APP_ORIGIN = 'http://localhost:5173';

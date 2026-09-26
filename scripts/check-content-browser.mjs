@@ -1,4 +1,4 @@
-﻿// End-to-end CMS check against an isolated database; never edits the working site's data.
+import { randomUUID } from 'node:crypto'; // End-to-end CMS check against an isolated database; never edits the working site's data.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -7,16 +7,17 @@ import { spawn } from 'node:child_process';
 import express from 'express';
 
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gvk-cms-browser-'));
-process.env.DATABASE_PATH = path.join(temp, 'preview.sqlite');
+process.env.MONGODB_DATABASE = 'gvk_test_' + randomUUID().replaceAll('-', '').slice(0, 24);
 process.env.NODE_ENV = 'test';
 const { app } = await import('../apps/api/src/app.js');
-const { db } = await import('../apps/api/src/db/index.js');
+const { store } = await import('../apps/api/src/db/index.js');
 const { hashPassword } = await import('../apps/api/src/modules/auth.js');
-db.prepare("INSERT INTO users(name,email,password,role) VALUES(?,?,?,'admin')").run(
-  'CMS Browser Test',
-  'cms-browser@example.com',
-  await hashPassword('temporary-cms-browser-password'),
-);
+await store.insert('users', {
+  name: 'CMS Browser Test',
+  email: 'cms-browser@example.com',
+  password: await hashPassword('temporary-cms-browser-password'),
+  role: 'admin',
+});
 app.use(express.static(path.resolve('apps/web/dist')));
 app.get('/{*path}', (req, res) => res.sendFile(path.resolve('apps/web/dist/index.html')));
 const server = app.listen(0, '127.0.0.1');
@@ -624,7 +625,8 @@ try {
     await Promise.race([new Promise((resolve) => browser.once('exit', resolve)), wait(1500)]);
   }
   await new Promise((resolve) => server.close(resolve));
-  db.close();
+  await store.database.dropDatabase();
+  await store.close();
   assert.ok(path.resolve(temp).startsWith(path.resolve(os.tmpdir()) + path.sep));
   fs.rmSync(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

@@ -3451,15 +3451,50 @@ img.compact-showcase-image {
   overflow-x: auto;
 }
 .managed-bottom-nav .bottom-nav-item {
-  flex: 1 0 68px;
-  min-width: 68px;
-  padding-inline: 8px;
+  flex: 1 0 60px;
+  min-width: 60px;
+  padding-inline: 4px;
+  gap: 2px;
 }
-.managed-bottom-nav .bottom-nav-item span {
+.managed-bottom-nav .mobile-nav-label {
   max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.mobile-nav-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.managed-bottom-nav .bottom-nav-item.active .mobile-nav-icon {
+  color: #19140a;
+  background: var(--gold);
+  border-color: var(--gold);
+}
+.managed-bottom-nav .bottom-nav-item.active svg {
+  transform: none;
+  filter: none;
+  color: inherit;
+}
+.managed-bottom-nav .bottom-nav-item.active::before {
+  content: none;
+}
+.managed-bottom-nav .bottom-nav-item:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -3px;
+  border-radius: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .managed-bottom-nav .mobile-nav-icon {
+    transition: none;
+  }
 }
 @media (max-width: 900px) {
   .managed-header {

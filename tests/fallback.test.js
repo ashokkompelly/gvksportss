@@ -7,9 +7,150 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createSqliteStore } from '../apps/api/src/db/sqlite.js';
 import { failoverStore } from '../apps/api/src/db/failover.js';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const run = promisify(execFile);
 const networkError = () => Object.assign(new Error('offline'), { name: 'MongoNetworkError' });
+async function until(check) {
+  const deadline = Date.now() + 2000;
+  while (!check()) {
+    if (Date.now() > deadline) throw new Error('Recovery did not finish');
+    await delay(5);
+  }
+}
+
+test('background retries restore a startup failure only after preparation finishes', async () => {
+  let attempts = 0;
+  let preparing = false;
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const primary = {
+    backend: 'mongodb',
+    database: { command: async () => ({ ok: 1 }) },
+    insert: async () => ({ changes: 1 }),
+    close: async () => {},
+  };
+  const store = failoverStore(
+    null,
+    { backend: 'sqlite', all: async () => ['snapshot'], close: async () => {} },
+    {
+      retryMs: 10,
+      connect: async () => {
+        if (++attempts < 3) throw networkError();
+        return primary;
+      },
+      prepare: async () => {
+        preparing = true;
+        await gate;
+      },
+    },
+  );
+  try {
+    await until(() => preparing);
+    assert.equal(store.backend, 'sqlite');
+    assert.deepEqual(await store.all('resources'), ['snapshot']);
+    await assert.rejects(store.insert('users', {}), { status: 503 });
+    await delay(35);
+    assert.equal(attempts, 3, 'No overlapping retry while preparation is pending');
+    release();
+    await until(() => store.backend === 'mongodb');
+    assert.deepEqual(await store.insert('users', {}), { changes: 1 });
+    await delay(35);
+    assert.equal(attempts, 3, 'Stop retrying after recovery');
+  } finally {
+    release();
+    await store.close();
+  }
+});
+
+test('runtime outage recovers using the existing MongoDB client', async () => {
+  let online = false;
+  let attempts = 0;
+  let connections = 0;
+  const primary = {
+    backend: 'mongodb',
+    database: {
+      command: async () => {
+        attempts++;
+        if (!online) throw networkError();
+      },
+    },
+    all: async () => {
+      if (!online) throw networkError();
+      return ['live'];
+    },
+    close: async () => {},
+  };
+  const store = failoverStore(
+    primary,
+    { backend: 'sqlite', all: async () => ['snapshot'], close: async () => {} },
+    {
+      retryMs: 10,
+      connect: async () => {
+        connections++;
+        return primary;
+      },
+    },
+  );
+  try {
+    assert.deepEqual(await store.all('resources'), ['snapshot']);
+    await until(() => attempts > 0);
+    online = true;
+    await until(() => store.backend === 'mongodb');
+    assert.deepEqual(await store.all('resources'), ['live']);
+    assert.equal(connections, 0);
+    online = false;
+    assert.deepEqual(await store.all('resources'), ['snapshot']);
+    const previousAttempts = attempts;
+    await until(() => attempts > previousAttempts);
+    online = true;
+    await until(() => store.backend === 'mongodb');
+    assert.deepEqual(await store.all('resources'), ['live']);
+  } finally {
+    await store.close();
+  }
+});
+
+test('failed initialization closes new clients and shutdown prevents late promotion', async () => {
+  let attempts = 0;
+  let closedClients = 0;
+  let release;
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const store = failoverStore(
+    null,
+    { backend: 'sqlite', close: async () => {} },
+    {
+      retryMs: 10,
+      connect: async () => {
+        attempts++;
+        if (attempts === 2) await gate;
+        return {
+          backend: 'mongodb',
+          database: { command: async () => {} },
+          close: async () => {
+            closedClients++;
+          },
+        };
+      },
+      prepare: async () => {
+        if (attempts === 1) throw new Error('migration failed');
+      },
+    },
+  );
+  await until(() => attempts === 2);
+  assert.equal(closedClients, 1);
+  const closing = store.close();
+  release();
+  await closing;
+  await delay(35);
+  assert.equal(attempts, 2);
+  assert.equal(closedClients, 2);
+  assert.equal(store.backend, 'sqlite');
+});
 
 test('runtime reads switch once; failed writes are never replayed', async () => {
   let reads = 0;

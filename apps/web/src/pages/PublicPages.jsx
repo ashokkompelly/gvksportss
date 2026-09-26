@@ -4,6 +4,7 @@ import { Heading, useData, State, Empty } from '../components/ui';
 import { visibleItems } from '../../../../shared/siteContent';
 import { usePageContent } from '../lib/content';
 import TeamAchievements from '../components/TeamAchievements';
+import GalleryCard from '../components/GalleryCard';
 import { ArrowUpRight, PhoneCall, Mail, Award, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export function ContentPage({ slug: fixed }) {
@@ -158,15 +159,7 @@ export function Gallery() {
       <State data={data} error={error}>
         <div className="gallery">
           {data?.map((i) => (
-            <figure key={i.id}>
-              <a href={i.url} target="_blank" rel="noreferrer">
-                <img src={i.url} alt={i.title} loading="lazy" />
-              </a>
-              <figcaption>
-                <h3>{i.title}</h3>
-                <p>{i.description}</p>
-              </figcaption>
-            </figure>
+            <GalleryCard key={i.id} item={i} />
           ))}
         </div>
         {!data?.length && <Empty>{content.emptyMessage}</Empty>}

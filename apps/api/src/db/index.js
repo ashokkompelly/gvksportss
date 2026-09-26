@@ -1,12 +1,44 @@
 import { mongoStore } from './store.js';
-if (!process.env.MONGODB_URI)
-  throw new Error(
-    'MONGODB_URI is required. Set it in your hosting environment variables or local environment file.',
+import { openFallback } from './fallback.js';
+import { failoverStore } from './failover.js';
+
+const fallbackEnabled = process.env.SQLITE_FALLBACK !== 'false';
+const fallback = fallbackEnabled ? openFallback() : null;
+let primary;
+let expired = false;
+let timer;
+try {
+  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is not configured');
+  const connection = mongoStore(process.env.MONGODB_URI, process.env.MONGODB_DATABASE || 'gvk_db', {
+    onConnected() {
+      clearTimeout(timer);
+      if (expired) throw new Error('MongoDB startup deadline exceeded');
+    },
+  });
+  connection.then(
+    (connected) => {
+      if (expired) void connected.close();
+    },
+    () => {},
   );
-export const store = await mongoStore(
-  process.env.MONGODB_URI,
-  process.env.MONGODB_DATABASE || 'gvk_db',
-);
+  primary = fallbackEnabled
+    ? await Promise.race([
+        connection,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            expired = true;
+            reject(new Error('MongoDB startup deadline exceeded'));
+          }, 3000);
+        }),
+      ])
+    : await connection;
+} catch (error) {
+  if (!fallbackEnabled) throw error;
+  console.warn('MongoDB unavailable: serving SQLite content. Online services are paused.');
+} finally {
+  clearTimeout(timer);
+}
+export const store = fallbackEnabled ? failoverStore(primary, fallback) : primary;
 export const transaction = (fn) => store.transaction(fn);
 export const closeDatabase = () => store.close();
 export const constraintError = (e) => e.code === 11000 || e.code === 'LINKED_RECORDS';

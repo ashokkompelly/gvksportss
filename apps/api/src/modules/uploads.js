@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { audit, store } from '../db/index.js';
 import { saveMedia, readMedia } from '../db/media.js';
 import { fail } from './schemas.js';
+import { connectionFailure } from '../db/failover.js';
 
 export async function uploadImage(req, res) {
   if (!Buffer.isBuffer(req.body) || !req.body.length) fail(400, 'Choose an image to upload.');
@@ -40,7 +41,22 @@ export async function uploadImage(req, res) {
 
 export async function serveMongoImage(req, res) {
   if (!/^\/[a-zA-Z0-9_.-]+$/.test(req.path)) return res.sendStatus(404);
-  const image = await readMedia(store.database, req.path.slice(1));
+  const filename = req.path.slice(1);
+  let image;
+  if (store.backend === 'mongodb') {
+    try {
+      image = await readMedia(store.database, filename);
+    } catch (error) {
+      if (!connectionFailure(error) || !store.switchToFallback) throw error;
+      store.switchToFallback();
+    }
+  }
+  if (store.backend === 'sqlite') {
+    const row = store.database
+      .prepare('SELECT bytes, content_type FROM media WHERE filename=?')
+      .get(filename);
+    if (row) image = { bytes: Buffer.from(row.bytes), contentType: row.content_type };
+  }
   if (!image) return res.sendStatus(404);
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   res.type(image.contentType).send(image.bytes);

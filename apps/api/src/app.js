@@ -2,7 +2,6 @@ import express from 'express';
 import helmet from 'helmet';
 import path from 'node:path';
 import { config, root } from './config/env.js';
-import './db/seed.js';
 import { session, auth } from './modules/auth.js';
 import { catalog, enquiries } from './modules/catalog.js';
 import { member } from './modules/member.js';
@@ -10,6 +9,15 @@ import { admin } from './modules/admin.js';
 import { registrations } from './modules/registrations.js';
 import { serveMongoImage } from './modules/uploads.js';
 import { store } from './db/index.js';
+import { connectionFailure } from './db/failover.js';
+if (store.backend === 'mongodb') {
+  try {
+    await import('./db/seed.js');
+  } catch (error) {
+    if (!store.switchToFallback || (!connectionFailure(error) && error.status !== 503)) throw error;
+    store.switchToFallback();
+  }
+}
 export const app = express();
 app.disable('x-powered-by');
 app.use(
@@ -36,10 +44,27 @@ app.use('/api', (req, res, next) => {
   next();
 });
 app.use(express.json({ limit: '100kb' }));
+app.use('/api', (req, res, next) => {
+  if (
+    store.backend === 'sqlite' &&
+    !(req.method === 'GET' && (req.path.startsWith('/catalog/') || req.path === '/health'))
+  )
+    return res
+      .status(503)
+      .json({ error: 'Online services are temporarily unavailable. Please try again later.' });
+  next();
+});
 app.use(session);
 app.get('/api/health', async (req, res) => {
-  await store.database.command({ ping: 1 });
-  res.json({ ok: true, database: store.backend });
+  if (store.backend === 'mongodb') {
+    try {
+      await store.database.command({ ping: 1 });
+    } catch (error) {
+      if (!connectionFailure(error) || !store.switchToFallback) throw error;
+      store.switchToFallback();
+    }
+  }
+  res.json({ ok: true, database: store.backend, readOnly: store.backend === 'sqlite' });
 });
 app.use('/api/auth', auth);
 app.use('/api/catalog', catalog);

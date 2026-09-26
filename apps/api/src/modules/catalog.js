@@ -27,7 +27,7 @@ catalog.get('/:kind', async (req, res) => {
           });
           return {
             ...r,
-            remaining: r.capacity - count,
+            remaining: store.backend === 'sqlite' ? null : r.capacity - count,
           };
         }
         return req.params.kind === 'pages' ? publicContent(r) : r;

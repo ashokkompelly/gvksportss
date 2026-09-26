@@ -1,6 +1,6 @@
 # MongoDB Atlas
 
-The API uses MongoDB exclusively.
+MongoDB is the primary database. A bundled read-only SQLite snapshot serves public content during outages; see the launch fallback section in README.md.
 MongoDB mode uses Atlas for application records and GridFS for uploaded images.
 The browser receives neither the connection string nor database credentials.
 

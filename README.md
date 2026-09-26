@@ -109,3 +109,11 @@ Before a public launch, add verified email/password reset, automated backups and
 See `docs/REQUIREMENTS.md` for decisions to collect next.
 
 Integration tests require a MongoDB replica set or Atlas connection in `MONGODB_URI` (`npm test` loads `.env`). They create and remove randomly named `gvk_test_*` databases; the database user needs permission to manage these test databases.
+
+## Launch fallback
+
+MongoDB is primary. If it is missing or cannot connect within three seconds, the app serves public content and images from `data/content-fallback.sqlite`. Connection failures during requests also switch to this snapshot. Fallback is read-only: sign-in, admin changes, bookings, registrations, and enquiries return 503 until MongoDB is restored and the app restarted. The health endpoint reports `database: "sqlite"` and `readOnly: true`.
+
+The snapshot includes published content and its uploaded images, not accounts or customer records. Run `npm run db:export-fallback` with working MongoDB access after content changes, then deploy the updated snapshot with the code. The snapshot is intentionally tracked in Git and needs no writable hosting disk. It is a point-in-time copy, not automatic synchronization. Set `SQLITE_FALLBACK=false` to require MongoDB, or `SQLITE_FALLBACK_PATH` to choose another snapshot. Node.js 24 or later is required. Run `npm run test:fallback` to test without MongoDB.
+
+To diagnose the hosting connection directly, run `node test-mongo.js`. It reports missing configuration or connection error codes without printing the URI or credentials, and exits unsuccessfully if it cannot connect and ping within 15 seconds.

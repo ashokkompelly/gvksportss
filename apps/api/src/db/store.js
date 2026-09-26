@@ -26,10 +26,15 @@ const valid = (table) => {
   return table;
 };
 
-export async function mongoStore(uri, database) {
-  const client = new MongoClient(uri, { serverSelectionTimeoutMS: 15000, connectTimeoutMS: 10000 });
+export async function mongoStore(uri, database, { onConnected = () => {} } = {}) {
+  const client = new MongoClient(uri, {
+    serverSelectionTimeoutMS: process.env.SQLITE_FALLBACK === 'false' ? 15000 : 2000,
+    connectTimeoutMS: process.env.SQLITE_FALLBACK === 'false' ? 10000 : 2000,
+    timeoutMS: process.env.SQLITE_FALLBACK === 'false' ? 15000 : 3000,
+  });
   try {
     await client.connect();
+    onConnected();
   } catch (error) {
     await client.close();
     console.error(
@@ -50,9 +55,7 @@ export async function mongoStore(uri, database) {
   }
   const collection = (table) =>
     db.collection(valid(table) === 'resources' ? resourceCollection : table);
-  let categorized = !!(await db
-    .collection('_control')
-    .findOne({ _id: 'content_layout', version: 2 }));
+  let categorized;
   const content = categorizedContent(db, options);
   const contentIsCategorized = async () => {
     if (!categorized)
@@ -62,6 +65,9 @@ export async function mongoStore(uri, database) {
     return categorized;
   };
   try {
+    categorized = !!(await db
+      .collection('_control')
+      .findOne({ _id: 'content_layout', version: 2 }));
     if (categorized) await createContentIndexes(db);
     for (const table of tables)
       await collection(table).createIndex({ [keys[table] || 'id']: 1 }, { unique: true });

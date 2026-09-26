@@ -22,7 +22,7 @@ export default defineConfig(async ({ command }) => {
           signal: AbortSignal.timeout(2000),
         });
         const health = await response.json();
-        if (response.ok && health.ok && health.database === 'mongodb') {
+        if (response.ok && health.ok && ['mongodb', 'sqlite'].includes(health.database)) {
           ready = true;
           break;
         }

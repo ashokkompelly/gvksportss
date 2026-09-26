@@ -25,5 +25,8 @@
   "devDependencies": {
     "concurrently": "^9.2.0",
     "prettier": "^3.9.8"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-musl": "4.63.4"
   }
 }

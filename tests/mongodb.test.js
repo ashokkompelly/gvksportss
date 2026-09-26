@@ -69,7 +69,11 @@ test(
           cookie: response.headers.get('set-cookie')?.split(';')[0],
         };
       }
-      assert.deepEqual((await request('/health')).data, { ok: true, database: 'mongodb' });
+      assert.deepEqual((await request('/health')).data, {
+        ok: true,
+        database: 'mongodb',
+        readOnly: false,
+      });
       assert.equal((await request('/admin/overview')).status, 401);
       await store.insert('users', {
         id: 100,

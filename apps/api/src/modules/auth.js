@@ -18,6 +18,7 @@ const digest = (t) => createHash('sha256').update(t).digest('hex');
 const cookie = (token) =>
   `gvk_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${token ? 604800 : 0}${config.production ? '; Secure' : ''}`;
 export async function session(req, res, next) {
+  if (store.backend === 'sqlite') return next();
   const token = req.headers.cookie
     ?.split(';')
     .map((s) => s.trim())

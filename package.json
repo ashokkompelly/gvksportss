@@ -20,13 +20,18 @@
     "test:mongodb": "node --env-file=.env --test tests/mongodb.test.js",
     "db:organize-content": "node --env-file=.env scripts/organize-mongodb-content.mjs",
     "db:migrate:team-pages": "node --env-file=.env scripts/migrate-team-pages.mjs",
-    "test:team-pages:browser": "node --env-file=.env scripts/check-team-pages-browser.mjs"
+    "test:team-pages:browser": "node --env-file=.env scripts/check-team-pages-browser.mjs",
+    "db:export-fallback": "node --import ./apps/api/src/config/load-env.js scripts/export-fallback.mjs",
+    "test:fallback": "node --test tests/fallback.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",
     "prettier": "^3.9.8"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-musl": "4.63.4"
+    "@rollup/rollup-linux-x64-musl": "^4.63.5"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }

@@ -56,7 +56,7 @@ export default function Events() {
               <h2>{e.title}</h2>
               <p>{e.description}</p>
               <p>{date(e.start)}</p>
-              {!past && <p>{e.remaining} places left</p>}
+              {!past && e.remaining !== null && <p>{e.remaining} places left</p>}
               <EventRegistration event={e} onRegistered={reload} />
             </article>
           ))}

@@ -8,3 +8,6 @@ apps/web/dist/
 
 data/uploads/
 data/exports/
+data/*.sqlite.tmp
+data/*.sqlite-wal
+data/*.sqlite-shm

@@ -198,7 +198,8 @@ export default function EventRegistration({ event, onRegistered }) {
   const [open, setOpen] = useState(false);
   const [registered, setRegistered] = useState(false);
   const closed = new Date(event.start) <= new Date();
-  const full = event.remaining < 1;
+  const unavailable = event.remaining === null;
+  const full = !unavailable && event.remaining < 1;
   return (
     <div className="event-registration">
       {registered ? (
@@ -208,11 +209,17 @@ export default function EventRegistration({ event, onRegistered }) {
       ) : (
         <button
           className="button gold"
-          disabled={closed || full}
+          disabled={closed || full || unavailable}
           aria-haspopup="dialog"
           onClick={() => setOpen(true)}
         >
-          {closed ? 'Registration closed' : full ? 'Fully booked' : 'Register now'}
+          {closed
+            ? 'Registration closed'
+            : unavailable
+              ? 'Registration temporarily unavailable'
+              : full
+                ? 'Fully booked'
+                : 'Register now'}
         </button>
       )}
       {open && (

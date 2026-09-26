@@ -98,6 +98,14 @@ HTTPS origin as `APP_ORIGIN`. Allow the hosting server's outbound IP in Atlas
 Network Access. Deploy the updated application code and built frontend.
 The local `.env` file is not a deployment mechanism.
 
+If startup reports `connect EACCES` on port 27017, check the hosting environment's
+outbound TCP restrictions as well as Atlas Network Access. Both must permit the
+connection; changing the Atlas IP access list cannot remove a host-side network
+restriction. Ask your host for its outbound IP addresses and allow those in Atlas.
+Set `MONGODB_URI`, `MONGODB_DATABASE`, `NODE_ENV=production`, and `APP_ORIGIN` in
+the hosting dashboard, then redeploy. A missing optional `.env` file does not mean
+the URI is missing: a connection attempt to an Atlas address means a URI was supplied.
+
 Uploaded images are in Atlas GridFS in MongoDB mode; bundled images in
 `apps/web/public` remain part of the frontend build. No persistent local upload
 volume is needed in MongoDB mode.

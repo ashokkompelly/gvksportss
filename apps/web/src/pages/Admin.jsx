@@ -4,6 +4,9 @@ import TeamManager from '../components/TeamManager';
 import { RegistrationDetailsForm } from '../components/EventRegistration';
 import AdminPreview from '../components/AdminPreview';
 import ImageUpload from '../components/ImageUpload';
+import GalleryImagesUpload from '../components/GalleryImagesUpload';
+import { galleryImages } from '../../../../shared/gallery';
+import { notify } from '../lib/notifications';
 import PageContentManager, { PageContentEditor } from '../components/PageContentEditor';
 import { managedSlugs } from '../../../../shared/siteContent';
 import { Heading, useData, State, Action, Empty } from '../components/ui';
@@ -67,6 +70,7 @@ function Editor(props) {
 }
 function EditorForm({ kind, item, onClose, onSave }) {
   const [image, setImage] = useState(item.image || item.url || '');
+  const [images, setImages] = useState(() => galleryImages(item));
   const [busy, setBusy] = useState(false);
   return (
     <form
@@ -92,6 +96,14 @@ function EditorForm({ kind, item, onClose, onSave }) {
                   ? new Date(value).toISOString()
                   : value;
         }
+        if (kind === 'gallery') {
+          if (!images.length) {
+            notify('Upload at least one event photo before saving.', 'error');
+            return;
+          }
+          body.images = images;
+          body.url = images[0];
+        }
         setBusy(true);
         try {
           await api('/admin/' + kind + (item.id ? '/' + item.id : ''), {
@@ -115,7 +127,9 @@ function EditorForm({ kind, item, onClose, onSave }) {
         </button>
       </div>
       {Object.entries({ ...fields[kind], published: 'checkbox' }).map(([key, type]) =>
-        key === 'image' || (kind === 'gallery' && key === 'url') ? (
+        kind === 'gallery' && key === 'url' ? (
+          <GalleryImagesUpload key={key} value={images} onChange={setImages} disabled={busy} />
+        ) : key === 'image' ? (
           <ImageUpload
             key={key}
             name={key}
@@ -461,8 +475,9 @@ function ContentManager({ kind, initiallyCreate = false }) {
       </div>
       {kind === 'gallery' && (
         <p>
-          Add a title, description and upload a photo for each gallery card. Select Published on
-          website and save to show it on the Gallery page.
+          Create an album for each event with a title, description and multiple photos. Reorder
+          photos to choose the cover. Select Published on website and save to show the album on the
+          Gallery page.
         </p>
       )}
       {kind === 'pages' && (

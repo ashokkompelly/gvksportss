@@ -104,7 +104,7 @@ export const pageDefaults = {
               'School chess tournaments, coaching programmes and workshops that bring students together to learn and compete.',
             id: 'audience-0',
             published: true,
-            href: '/contact?interest=School%20chess%20events%20and%20programs',
+            href: '',
           },
           {
             icon: 'users',
@@ -113,7 +113,7 @@ export const pageDefaults = {
               'Resident chess tournaments, community events and workshops for your neighbourhood.',
             id: 'audience-1',
             published: true,
-            href: '/contact?interest=Gated%20community%20chess%20events',
+            href: '',
           },
           {
             icon: 'building',
@@ -122,7 +122,7 @@ export const pageDefaults = {
               'Corporate chess events and tournaments that bring colleagues together through friendly competition.',
             id: 'audience-2',
             published: true,
-            href: '/contact?interest=Corporate%20chess%20events',
+            href: '',
           },
         ],
       },

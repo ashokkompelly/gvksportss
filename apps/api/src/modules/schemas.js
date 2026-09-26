@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { validatePageContent, schemaFor } from './page-content.js';
 import { teamMemberTemplate } from '../../../../shared/siteContent.js';
+import { MAX_GALLERY_IMAGES } from '../../../../shared/gallery.js';
 const title = z.string().trim().min(2).max(120),
   description = z.string().trim().min(5).max(5000),
   sport = z.enum(['Chess', 'Badminton']);
@@ -72,18 +73,29 @@ export const schemas = {
     durationDays: integer,
     published,
   }),
-  gallery: z.object({
-    title,
-    description,
-    url: z
-      .string()
-      .max(2000)
-      .refine(
-        (v) => (v.startsWith('/') && !v.startsWith('//')) || /^https:\/\//.test(v),
-        'Use an HTTPS URL or local /asset path',
-      ),
-    published,
-  }),
+  gallery: z
+    .object({
+      title,
+      description,
+      url: z
+        .string()
+        .max(2000)
+        .refine(
+          (v) => (v.startsWith('/') && !v.startsWith('//')) || /^https:\/\//.test(v),
+          'Use an HTTPS URL or local /asset path',
+        ),
+      images: z
+        .array(media.refine((value) => value.trim().length > 0, 'Add a valid photo.'))
+        .min(1)
+        .max(MAX_GALLERY_IMAGES)
+        .optional(),
+      published,
+    })
+    .transform((item) => ({
+      ...item,
+      images: item.images || [item.url],
+      url: item.images?.[0] || item.url,
+    })),
 };
 export const signup = z.object({
   name: title,

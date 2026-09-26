@@ -1,13 +1,6 @@
-import {
-  Award,
-  ArrowUpRight,
-  Image as ImageIcon,
-  Trophy,
-  School,
-  Building2,
-  Users,
-} from 'lucide-react';
+import { Award, ArrowUpRight, Trophy, School, Building2, Users } from 'lucide-react';
 import { DisciplineShowcase } from '../pages/Coaching';
+import GalleryCard from './GalleryCard';
 
 export default function AdminPreview({ value = {}, kind = '' }) {
   const data = value;
@@ -20,7 +13,9 @@ export default function AdminPreview({ value = {}, kind = '' }) {
           )}
           <div className="brand-text">
             {data.brand.showName && <strong>{data.brand.name}</strong>}
-            {data.brand.showTagline && <small className="brand-tagline">{data.brand.tagline}</small>}
+            {data.brand.showTagline && (
+              <small className="brand-tagline">{data.brand.tagline}</small>
+            )}
           </div>
         </div>
         <div className="admin-menu-preview">
@@ -58,16 +53,7 @@ export default function AdminPreview({ value = {}, kind = '' }) {
         <span className="button outline small">{data.achievements?.length || 0} achievements</span>
       </article>
     );
-  if (kind === 'gallery')
-    return (
-      <figure className="admin-gallery-preview">
-        {data.url ? <img src={data.url} alt={data.title || ''} loading="lazy" /> : <ImageIcon />}
-        <figcaption>
-          <h3>{data.title}</h3>
-          <p>{data.description}</p>
-        </figcaption>
-      </figure>
-    );
+  if (kind === 'gallery') return <GalleryCard item={data} className="admin-gallery-preview" />;
   if (kind === 'slide')
     return (
       <div className="admin-slide-preview">

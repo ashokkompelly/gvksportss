@@ -3,8 +3,18 @@ import { openFallback } from './fallback.js';
 import { failoverStore } from './failover.js';
 import { seedContent } from './seed-content.js';
 
-const fallbackEnabled = process.env.SQLITE_FALLBACK !== 'false';
-const fallback = fallbackEnabled ? openFallback() : null;
+let fallback = null;
+if (process.env.SQLITE_FALLBACK !== 'false') {
+  try {
+    fallback = openFallback();
+  } catch (error) {
+    console.warn(
+      'SQLite fallback unavailable; continuing with MongoDB only. Check the bundled snapshot and SQLITE_FALLBACK_PATH.',
+      { code: error.code },
+    );
+  }
+}
+const fallbackEnabled = fallback !== null;
 async function connectMongo() {
   if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI is not configured');
   let expired = false;

@@ -4,6 +4,11 @@
   "installCommand": "npm ci --workspaces --include-workspace-root --include=dev",
   "buildCommand": "npm --prefix apps/web run build",
   "outputDirectory": "apps/web/dist",
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "data/content-fallback.sqlite"
+    }
+  },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
     { "src": "/uploads/(.*)", "dest": "/api/index.js" },

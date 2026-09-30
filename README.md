@@ -117,3 +117,10 @@ MongoDB is primary. If it is missing or cannot connect within three seconds, the
 The snapshot includes published content and its uploaded images, not accounts or customer records. Run `npm run db:export-fallback` with working MongoDB access after content changes, then deploy the updated snapshot with the code. The snapshot is intentionally tracked in Git and needs no writable hosting disk. It is a point-in-time copy, not automatic synchronization. Set `SQLITE_FALLBACK=false` to require MongoDB, or `SQLITE_FALLBACK_PATH` to choose another snapshot. Node.js 24 or later is required. Run `npm run test:fallback` to test without MongoDB.
 
 To diagnose the hosting connection directly, run `node test-mongo.js`. It reports missing configuration or connection error codes without printing the URI or credentials, and exits unsuccessfully if it cannot connect and ping within 15 seconds.
+
+## Vercel deployment
+
+Deploy this project from the repository root so both `apps/web` and the root `api/index.js` function are included. In Vercel Project Settings, set Root Directory to the repository root (leave it empty), not `apps/web`.
+
+The checked-in `vercel.json` installs the npm workspaces with `npm ci --workspaces --include-workspace-root --include=dev`, builds with `npm --prefix apps/web run build`, and serves `apps/web/dist`. Remove stale dashboard command overrides and deploy the commit containing this configuration. Redeploying an older deployment reuses that older commit's files.
+

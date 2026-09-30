@@ -225,6 +225,37 @@ test('validation errors do not switch databases; transactions never mix stores',
   assert.equal(fallbackReads, 0);
 });
 
+test('an unavailable snapshot does not prevent MongoDB initialization', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'gvk-missing-fallback-'));
+  try {
+    const result = await run(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+      import assert from 'node:assert/strict';
+      await assert.rejects(import('./apps/api/src/db/index.js'), {
+        message: 'MONGODB_URI is not configured',
+      });
+    `,
+      ],
+      {
+        env: {
+          ...process.env,
+          MONGODB_URI: '',
+          SQLITE_FALLBACK: 'true',
+          SQLITE_FALLBACK_PATH: path.join(directory, 'missing.sqlite'),
+        },
+        timeout: 15000,
+      },
+    );
+    assert.match(result.stderr, /SQLite fallback unavailable; continuing with MongoDB only/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 for (const uri of ['', 'mongodb://127.0.0.1:1/?directConnection=true']) {
   test(`public content and images remain available with ${uri ? 'unreachable' : 'missing'} MongoDB`, async () => {
     const directory = mkdtempSync(path.join(os.tmpdir(), 'gvk-fallback-'));

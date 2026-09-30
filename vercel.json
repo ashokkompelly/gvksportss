@@ -1,7 +1,8 @@
 {
   "version": 2,
   "framework": "vite",
-  "buildCommand": "npm run build -w apps/web",
+  "installCommand": "npm ci --workspaces --include-workspace-root --include=dev",
+  "buildCommand": "npm --prefix apps/web run build",
   "outputDirectory": "apps/web/dist",
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },

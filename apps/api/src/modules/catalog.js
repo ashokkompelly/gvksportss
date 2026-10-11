@@ -1,3 +1,4 @@
+import { catalogCacheHeaders } from './catalog-cache.js';
 import { Router } from 'express';
 import { resources, store } from '../db/index.js';
 import { schemas, fail } from './schemas.js';
@@ -15,25 +16,28 @@ function publicContent(value) {
 }
 export const catalog = Router();
 catalog.get('/:kind', async (req, res) => {
-  if (!schemas[req.params.kind]) fail(404, 'Not found');
-  res.json(
-    await Promise.all(
-      (await resources(req.params.kind)).map(async (r) => {
-        if (['slots', 'events'].includes(req.params.kind)) {
-          const table = req.params.kind === 'slots' ? 'bookings' : 'registrations',
-            key = req.params.kind === 'slots' ? 'slot_id' : 'event_id';
-          const count = await store.count(table, {
-            [key]: r.id,
-          });
-          return {
-            ...r,
-            remaining: store.backend === 'sqlite' ? null : r.capacity - count,
-          };
-        }
-        return req.params.kind === 'pages' ? publicContent(r) : r;
-      }),
-    ),
-  );
+  const { kind } = req.params;
+  if (!schemas[kind]) fail(404, 'Not found');
+  const items = await resources(kind);
+  let result;
+  if (['slots', 'events'].includes(kind)) {
+    const table = kind === 'slots' ? 'bookings' : 'registrations',
+      key = kind === 'slots' ? 'slot_id' : 'event_id';
+    const counts =
+      store.backend === 'sqlite'
+        ? {}
+        : await store.countBy(
+            table,
+            key,
+            items.map((item) => item.id),
+          );
+    result = items.map((item) => ({
+      ...item,
+      remaining: store.backend === 'sqlite' ? null : item.capacity - (counts[item.id] || 0),
+    }));
+  } else result = kind === 'pages' ? items.map(publicContent) : items;
+  catalogCacheHeaders(req, res, store.backend);
+  res.json(result);
 });
 export const enquiries = Router();
 enquiries.post(

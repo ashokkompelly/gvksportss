@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { MongoClient } from 'mongodb';
+import { mongoReservationCounts } from './reservation-counts.js';
 import { categorizedContent, createContentIndexes } from './content-store.js';
 
 export const tables = [
@@ -26,7 +27,11 @@ const valid = (table) => {
   return table;
 };
 
-export async function mongoStore(uri, database, { onConnected = () => {} } = {}) {
+export async function mongoStore(
+  uri,
+  database,
+  { onConnected = () => {}, ensureSchema = true } = {},
+) {
   const client = new MongoClient(uri, {
     serverSelectionTimeoutMS: process.env.SQLITE_FALLBACK === 'false' ? 15000 : 2000,
     connectTimeoutMS: process.env.SQLITE_FALLBACK === 'false' ? 10000 : 2000,
@@ -58,7 +63,7 @@ export async function mongoStore(uri, database, { onConnected = () => {} } = {})
   let categorized;
   const content = categorizedContent(db, options);
   const contentIsCategorized = async () => {
-    if (!categorized)
+    if (categorized === undefined)
       categorized = !!(await db
         .collection('_control')
         .findOne({ _id: 'content_layout', version: 2 }, options()));
@@ -68,27 +73,36 @@ export async function mongoStore(uri, database, { onConnected = () => {} } = {})
     categorized = !!(await db
       .collection('_control')
       .findOne({ _id: 'content_layout', version: 2 }));
-    if (categorized) await createContentIndexes(db);
-    for (const table of tables)
-      await collection(table).createIndex({ [keys[table] || 'id']: 1 }, { unique: true });
-    await collection('users').createIndex({ email: 1 }, { unique: true });
-    await collection('resources').createIndex({ kind: 1, id: 1 });
-    await collection('bookings').createIndex({ user_id: 1, slot_id: 1 }, { unique: true });
-    await collection('registrations').createIndex(
-      { user_id: 1, event_id: 1 },
-      { unique: true, partialFilterExpression: { user_id: { $type: 'number' } } },
-    );
-    await collection('registrations').createIndex(
-      { event_id: 1, phone: 1 },
-      { unique: true, partialFilterExpression: { phone: { $type: 'string' } } },
-    );
-    await collection('memberships').createIndex(
-      { user_id: 1 },
-      { unique: true, partialFilterExpression: { status: { $in: ['pending', 'active'] } } },
-    );
-    await db
-      .collection('_control')
-      .updateOne({ _id: 'writes' }, { $setOnInsert: { version: 0 } }, { upsert: true });
+    if (!ensureSchema && !(await db.collection('_control').findOne({ _id: 'writes' }))) {
+      throw Object.assign(
+        new Error('MongoDB setup is required. Run npm run db:setup before deployment.'),
+        { status: 503 },
+      );
+    }
+    if (ensureSchema) {
+      if (categorized) await createContentIndexes(db);
+      for (const table of tables)
+        await collection(table).createIndex({ [keys[table] || 'id']: 1 }, { unique: true });
+      await collection('users').createIndex({ email: 1 }, { unique: true });
+      await collection('resources').createIndex({ kind: 1, id: 1 });
+      await collection('bookings').createIndex({ user_id: 1, slot_id: 1 }, { unique: true });
+      await collection('bookings').createIndex({ slot_id: 1 });
+      await collection('registrations').createIndex(
+        { user_id: 1, event_id: 1 },
+        { unique: true, partialFilterExpression: { user_id: { $type: 'number' } } },
+      );
+      await collection('registrations').createIndex(
+        { event_id: 1, phone: 1 },
+        { unique: true, partialFilterExpression: { phone: { $type: 'string' } } },
+      );
+      await collection('memberships').createIndex(
+        { user_id: 1 },
+        { unique: true, partialFilterExpression: { status: { $in: ['pending', 'active'] } } },
+      );
+      await db
+        .collection('_control')
+        .updateOne({ _id: 'writes' }, { $setOnInsert: { version: 0 } }, { upsert: true });
+    }
   } catch (error) {
     await client.close();
     throw error;
@@ -114,6 +128,9 @@ export async function mongoStore(uri, database, { onConnected = () => {} } = {})
         ...options(),
         projection: { ...projection, _id: 0 },
       });
+    },
+    countBy(table, field, ids) {
+      return mongoReservationCounts(db, table, field, ids, options());
     },
     async count(table, filter = {}) {
       if (table === 'resources' && (await contentIsCategorized()))

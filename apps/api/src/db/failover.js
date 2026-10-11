@@ -99,9 +99,9 @@ export function failoverStore(
               throw unavailable();
             }
           };
-        if (['all', 'one', 'count', 'insert', 'update', 'remove'].includes(key))
+        if (['all', 'one', 'count', 'countBy', 'insert', 'update', 'remove'].includes(key))
           return async (...args) => {
-            const reading = ['all', 'one', 'count'].includes(key);
+            const reading = ['all', 'one', 'count', 'countBy'].includes(key);
             if (active === fallback && !reading) throw unavailable();
             try {
               const selected = transactionContext.getStore() || active;

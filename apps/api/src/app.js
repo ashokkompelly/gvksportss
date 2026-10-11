@@ -1,4 +1,5 @@
 import express from 'express';
+import { automaticDatabaseSetup } from './config/database-setup.js';
 import helmet from 'helmet';
 import path from 'node:path';
 import { config, root } from './config/env.js';
@@ -10,7 +11,7 @@ import { registrations } from './modules/registrations.js';
 import { serveMongoImage } from './modules/uploads.js';
 import { store } from './db/index.js';
 import { connectionFailure } from './db/failover.js';
-if (store.backend === 'mongodb') {
+if (automaticDatabaseSetup && store.backend === 'mongodb') {
   try {
     await import('./db/seed.js');
   } catch (error) {
@@ -54,7 +55,11 @@ app.use('/api', (req, res, next) => {
       .json({ error: 'Online services are temporarily unavailable. Please try again later.' });
   next();
 });
-app.use(session);
+// Published content and immutable images never depend on the visitor's session.
+app.use('/api/auth', session);
+app.use('/api/member', session);
+app.use('/api/admin', session);
+app.use('/api/registrations', session);
 app.get('/api/health', async (req, res) => {
   if (store.backend === 'mongodb') {
     try {

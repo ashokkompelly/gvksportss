@@ -1,6 +1,14 @@
 import { notify } from './notifications';
+import { catalogCache } from './catalog-cache.js';
+export { catalogCache };
 
-export async function api(path, options = {}) {
+export function api(path, options = {}) {
+  const simpleGet = Object.keys(options).length === 0;
+  return simpleGet
+    ? catalogCache.read(path, (url) => request(url, options))
+    : request(path, options);
+}
+async function request(path, options = {}) {
   const admin = path.startsWith('/admin/');
   const binary = options.body instanceof Blob;
   const method = (options.method || 'GET').toUpperCase();
@@ -22,6 +30,7 @@ export async function api(path, options = {}) {
     }
     if (!res.ok) throw new Error(data.error || 'Request failed');
     if (admin && method !== 'GET' && path !== '/admin/uploads') {
+      catalogCache.invalidate();
       window.dispatchEvent(new Event('gvk:content-updated'));
       notify(method === 'DELETE' ? 'Deleted successfully.' : 'Saved successfully.', 'success');
     }

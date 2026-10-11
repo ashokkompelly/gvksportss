@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { tables } from './store.js';
+import { reservationField } from './reservation-counts.js';
 const valid = (table) => {
   if (!tables.includes(table)) throw new Error('Unknown table');
   return table;
@@ -76,6 +77,20 @@ export function sqliteStore(db) {
     },
     async one(table, filter = {}, fields) {
       return (await store.all(table, filter, {}, fields))[0];
+    },
+    countBy(table, key, ids) {
+      reservationField(table, key);
+      if (!ids.length) return Promise.resolve({});
+      return access(() =>
+        Object.fromEntries(
+          db
+            .prepare(
+              `SELECT ${key} AS id, count(*) AS total FROM ${table} WHERE ${key} IN (${ids.map(() => '?').join(',')}) GROUP BY ${key}`,
+            )
+            .all(...ids)
+            .map((row) => [row.id, row.total]),
+        ),
+      );
     },
     count(table, filter = {}) {
       return access(() => {

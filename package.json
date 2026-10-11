@@ -22,7 +22,9 @@
     "db:migrate:team-pages": "node --env-file=.env scripts/migrate-team-pages.mjs",
     "test:team-pages:browser": "node --env-file=.env scripts/check-team-pages-browser.mjs",
     "db:export-fallback": "node --import ./apps/api/src/config/load-env.js scripts/export-fallback.mjs",
-    "test:fallback": "node --test tests/fallback.test.js"
+    "test:fallback": "node --test tests/fallback.test.js",
+    "db:setup": "node scripts/setup-mongodb.mjs",
+    "test:performance": "node --test tests/performance.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",

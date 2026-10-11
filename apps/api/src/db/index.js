@@ -1,3 +1,4 @@
+import { automaticDatabaseSetup } from '../config/database-setup.js';
 import { mongoStore } from './store.js';
 import { openFallback } from './fallback.js';
 import { failoverStore } from './failover.js';
@@ -24,6 +25,7 @@ async function connectMongo() {
       process.env.MONGODB_URI,
       process.env.MONGODB_DATABASE || 'gvk_db',
       {
+        ensureSchema: automaticDatabaseSetup,
         onConnected() {
           clearTimeout(timer);
           if (expired) throw new Error('MongoDB connection deadline exceeded');
@@ -61,7 +63,7 @@ try {
 export const store = fallbackEnabled
   ? failoverStore(primary, fallback, {
       connect: connectMongo,
-      prepare: seedContent,
+      prepare: automaticDatabaseSetup ? seedContent : async () => {},
     })
   : primary;
 export const transaction = (fn) => store.transaction(fn);

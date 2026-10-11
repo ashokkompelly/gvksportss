@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -10,7 +10,7 @@ import Events from './pages/Events';
 import { ContentPage, Gallery, Contact } from './pages/PublicPages';
 import Auth, { Guard } from './pages/Auth';
 import Account from './pages/Account';
-import Admin from './pages/Admin';
+const Admin = lazy(() => import('./pages/Admin'));
 import './styles.css';
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -41,7 +41,15 @@ createRoot(document.getElementById('root')).render(
               path="admin"
               element={
                 <Guard admin>
-                  <Admin />
+                  <Suspense
+                    fallback={
+                      <p className="section" role="status">
+                        Loading admin portal…
+                      </p>
+                    }
+                  >
+                    <Admin />
+                  </Suspense>
                 </Guard>
               }
             />

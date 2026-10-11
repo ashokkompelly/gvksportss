@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../lib/api';
+import { api, catalogCache } from '../lib/api';
 import { Eye, EyeOff } from 'lucide-react';
 export function useData(path) {
-  const [data, setData] = useState(null),
+  const [data, setData] = useState(() => catalogCache.peek(path)),
     [error, setError] = useState('');
   const [version, refresh] = useState(0);
   const previousPath = useRef(path);
@@ -10,7 +10,7 @@ export function useData(path) {
     let live = true;
     setError('');
     if (previousPath.current !== path) {
-      setData(null);
+      setData(catalogCache.peek(path));
       previousPath.current = path;
     }
     api(path)
@@ -33,7 +33,14 @@ export function useData(path) {
       window.removeEventListener('focus', refreshContent);
     };
   }, []);
-  return { data, error, reload: () => refresh((v) => v + 1) };
+  return {
+    data,
+    error,
+    reload: () => {
+      catalogCache.invalidate(path);
+      refresh((v) => v + 1);
+    },
+  };
 }
 export function State({ data, error, children }) {
   if (error)

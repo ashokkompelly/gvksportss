@@ -97,7 +97,33 @@ export default function GalleryCard({ item, className = '', expanded = false, in
       )}
       <figcaption>
         <h3>{item.title}</h3>
-        <p>{item.description}</p>
+        {item.category === 'students-achievement' && (
+          <dl className="gallery-achievement-details">
+            {[
+              ['Student(s)', item.studentName],
+              ['Achievement', item.achievement],
+              ['Event', item.eventName],
+              [
+                'Date',
+                item.eventDate &&
+                  new Date(`${item.eventDate}T00:00:00`).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  }),
+              ],
+              ['Venue', item.eventLocation],
+            ]
+              .filter(([, value]) => value)
+              .map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+          </dl>
+        )}
+        <p style={{ whiteSpace: 'pre-line' }}>{item.description}</p>
         {!expanded && (
           <button
             type="button"

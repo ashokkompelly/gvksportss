@@ -75,6 +75,12 @@ export const schemas = {
   }),
   gallery: z
     .object({
+      category: z.enum(['gallery', 'students-achievement']).default('gallery'),
+      studentName: z.string().trim().max(250).default(''),
+      achievement: z.string().trim().max(250).default(''),
+      eventName: z.string().trim().max(250).default(''),
+      eventDate: z.union([z.iso.date(), z.literal('')]).default(''),
+      eventLocation: z.string().trim().max(250).default(''),
       title,
       description,
       url: z
@@ -90,6 +96,17 @@ export const schemas = {
         .max(MAX_GALLERY_IMAGES)
         .optional(),
       published,
+    })
+    .superRefine((item, ctx) => {
+      if (item.category !== 'students-achievement') return;
+      for (const key of ['studentName', 'achievement', 'eventName']) {
+        if (!item[key])
+          ctx.addIssue({
+            code: 'custom',
+            path: [key],
+            message: 'This achievement detail is required.',
+          });
+      }
     })
     .transform((item) => ({
       ...item,

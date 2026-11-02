@@ -4699,3 +4699,90 @@ body:has(.launch-experience[open]) #root {
     justify-self: center;
   }
 }
+
+.gallery-achievement-details {
+  margin: 12px 0;
+}
+.gallery-achievement-details > div {
+  margin-bottom: 8px;
+}
+.gallery-achievement-details dt {
+  font-weight: 600;
+}
+.gallery-achievement-details dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* Keep administration destinations distinct and grouped at every screen size. */
+.admin-nav {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-surface);
+  gap: 16px;
+  max-height: calc(100dvh - 130px);
+  overflow-y: auto;
+}
+.admin-nav-group {
+  gap: 4px;
+}
+.admin-nav-group + .admin-nav-group {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.admin-nav button {
+  padding: 9px 10px;
+  font-size: 13px;
+  border-color: transparent;
+  background: transparent;
+}
+.admin-nav-label {
+  padding: 4px 10px 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.admin-location {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.admin-location strong {
+  color: var(--gold-bright);
+}
+@media (min-width: 901px) {
+  .admin-shell {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+@media (max-width: 900px) {
+  .admin-nav {
+    align-items: stretch;
+    gap: 12px;
+    max-height: none;
+    padding: 12px;
+  }
+  .admin-nav-group {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .admin-nav-group + .admin-nav-group {
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding-top: 0;
+    padding-left: 12px;
+  }
+  .admin-nav .admin-nav-label {
+    display: block;
+  }
+  .admin-nav button {
+    text-align: left;
+  }
+}

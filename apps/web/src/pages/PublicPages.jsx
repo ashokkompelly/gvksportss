@@ -141,6 +141,8 @@ export function ContentPage({ slug: fixed }) {
 
 export function Gallery() {
   const { data, error } = useData('/catalog/gallery');
+  const [category, setCategory] = useState('gallery');
+  const items = data?.filter((item) => (item.category || 'gallery') === category);
   const pageState = usePageContent('gallery');
   const { page, content } = pageState;
   if (!page)
@@ -156,13 +158,35 @@ export function Gallery() {
       <Heading eyebrow={content.eyebrow} title={page.title}>
         {page.body}
       </Heading>
+      <div className="filters" aria-label="Gallery categories">
+        {[
+          ['gallery', 'Gallery'],
+          ['students-achievement', 'Students Achievement'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={category === value ? 'selected' : ''}
+            aria-pressed={category === value}
+            onClick={() => setCategory(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <State data={data} error={error}>
         <div className="gallery">
-          {data?.map((i) => (
+          {items?.map((i) => (
             <GalleryCard key={i.id} item={i} />
           ))}
         </div>
-        {!data?.length && <Empty>{content.emptyMessage}</Empty>}
+        {!items?.length && (
+          <Empty>
+            {category === 'students-achievement'
+              ? 'Student achievements will be shared here soon.'
+              : content.emptyMessage}
+          </Empty>
+        )}
       </State>
     </section>
   );

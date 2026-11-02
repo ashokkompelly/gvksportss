@@ -41,9 +41,25 @@ const fields = {
     membersOnly: 'checkbox',
   },
   plans: { title: 'text', description: 'textarea', price: 'number', durationDays: 'number' },
-  gallery: { title: 'text', description: 'textarea', url: 'text' },
+  gallery: {
+    category: 'gallery-category',
+    title: 'text',
+    studentName: 'text',
+    achievement: 'text',
+    eventName: 'text',
+    eventDate: 'date',
+    eventLocation: 'text',
+    description: 'textarea',
+    url: 'text',
+  },
 };
 const labels = {
+  category: 'Gallery tab',
+  studentName: 'Student name(s)',
+  achievement: 'Achievement / result',
+  eventName: 'Event name',
+  eventDate: 'Event date (optional)',
+  eventLocation: 'Event venue (optional)',
   slug: 'URL slug',
   title: 'Title',
   published: 'Published on website',
@@ -71,6 +87,7 @@ function Editor(props) {
 function EditorForm({ kind, item, onClose, onSave }) {
   const [image, setImage] = useState(item.image || item.url || '');
   const [images, setImages] = useState(() => galleryImages(item));
+  const [category, setCategory] = useState(item.category || 'gallery');
   const [busy, setBusy] = useState(false);
   return (
     <form
@@ -86,7 +103,7 @@ function EditorForm({ kind, item, onClose, onSave }) {
                 ? { location: item.location || '' }
                 : {};
         for (const [key, type] of Object.entries({ ...fields[kind], published: 'checkbox' })) {
-          const value = fd.get(key);
+          const value = fd.get(key) ?? '';
           body[key] =
             type === 'checkbox'
               ? value === 'on'
@@ -126,69 +143,89 @@ function EditorForm({ kind, item, onClose, onSave }) {
           Close
         </button>
       </div>
-      {Object.entries({ ...fields[kind], published: 'checkbox' }).map(([key, type]) =>
-        kind === 'gallery' && key === 'url' ? (
-          <GalleryImagesUpload key={key} value={images} onChange={setImages} disabled={busy} />
-        ) : key === 'image' ? (
-          <ImageUpload
-            key={key}
-            name={key}
-            value={image}
-            onChange={setImage}
-            label={
-              kind === 'events' ? 'Event image' : kind === 'gallery' ? 'Gallery image' : 'Image'
-            }
-            required={kind === 'events' || kind === 'gallery'}
-            disabled={busy}
-          />
-        ) : (
-          <label className={'field ' + (type === 'checkbox' ? 'check' : '')} key={key}>
-            <span>
-              {kind === 'events' && key === 'image'
-                ? 'Event image'
-                : labels[key] || key[0].toUpperCase() + key.slice(1)}
-            </span>
-            {type === 'textarea' ? (
-              <textarea name={key} defaultValue={item[key] || ''} required maxLength={5000} />
-            ) : type === 'sport' ? (
-              <select name={key} defaultValue={item[key] || 'Chess'}>
-                <option>Chess</option>
-                <option>Badminton</option>
-              </select>
-            ) : type === 'checkbox' ? (
-              <input name={key} type="checkbox" defaultChecked={item[key] || false} />
-            ) : (
-              <input
-                name={key}
-                type={type}
-                readOnly={
-                  kind === 'pages' &&
-                  key === 'slug' &&
-                  [...managedSlugs, 'footer'].includes(item.slug)
-                }
-                title={
-                  kind === 'pages' &&
-                  key === 'slug' &&
-                  [...managedSlugs, 'footer'].includes(item.slug)
-                    ? 'This reserved URL is used by the main navigation.'
-                    : undefined
-                }
-                required={key !== 'imageAlt' && (key !== 'image' || kind === 'events')}
-                maxLength={key === 'image' ? 2000 : key === 'imageAlt' ? 250 : undefined}
-                min={type === 'number' ? (key === 'price' ? 0 : 1) : undefined}
-                step={key === 'price' ? '0.01' : undefined}
-                defaultValue={
-                  item[key] !== undefined && item[key] !== ''
-                    ? type === 'datetime-local'
-                      ? localDate(item[key])
-                      : item[key]
-                    : ''
-                }
-              />
-            )}
-          </label>
-        ),
-      )}
+      {Object.entries({ ...fields[kind], published: 'checkbox' })
+        .filter(
+          ([key]) =>
+            category === 'students-achievement' ||
+            !['studentName', 'achievement', 'eventName', 'eventDate', 'eventLocation'].includes(
+              key,
+            ),
+        )
+        .map(([key, type]) =>
+          kind === 'gallery' && key === 'url' ? (
+            <GalleryImagesUpload key={key} value={images} onChange={setImages} disabled={busy} />
+          ) : key === 'image' ? (
+            <ImageUpload
+              key={key}
+              name={key}
+              value={image}
+              onChange={setImage}
+              label={
+                kind === 'events' ? 'Event image' : kind === 'gallery' ? 'Gallery image' : 'Image'
+              }
+              required={kind === 'events' || kind === 'gallery'}
+              disabled={busy}
+            />
+          ) : (
+            <label className={'field ' + (type === 'checkbox' ? 'check' : '')} key={key}>
+              <span>
+                {kind === 'events' && key === 'image'
+                  ? 'Event image'
+                  : labels[key] || key[0].toUpperCase() + key.slice(1)}
+              </span>
+              {type === 'gallery-category' ? (
+                <select
+                  name={key}
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                >
+                  <option value="gallery">Gallery</option>
+                  <option value="students-achievement">Students Achievement</option>
+                </select>
+              ) : type === 'textarea' ? (
+                <textarea name={key} defaultValue={item[key] || ''} required maxLength={5000} />
+              ) : type === 'sport' ? (
+                <select name={key} defaultValue={item[key] || 'Chess'}>
+                  <option>Chess</option>
+                  <option>Badminton</option>
+                </select>
+              ) : type === 'checkbox' ? (
+                <input name={key} type="checkbox" defaultChecked={item[key] || false} />
+              ) : (
+                <input
+                  name={key}
+                  type={type}
+                  readOnly={
+                    kind === 'pages' &&
+                    key === 'slug' &&
+                    [...managedSlugs, 'footer'].includes(item.slug)
+                  }
+                  title={
+                    kind === 'pages' &&
+                    key === 'slug' &&
+                    [...managedSlugs, 'footer'].includes(item.slug)
+                      ? 'This reserved URL is used by the main navigation.'
+                      : undefined
+                  }
+                  required={
+                    !['imageAlt', 'eventDate', 'eventLocation'].includes(key) &&
+                    (key !== 'image' || kind === 'events')
+                  }
+                  maxLength={key === 'image' ? 2000 : key === 'imageAlt' ? 250 : undefined}
+                  min={type === 'number' ? (key === 'price' ? 0 : 1) : undefined}
+                  step={key === 'price' ? '0.01' : undefined}
+                  defaultValue={
+                    item[key] !== undefined && item[key] !== ''
+                      ? type === 'datetime-local'
+                        ? localDate(item[key])
+                        : item[key]
+                      : ''
+                  }
+                />
+              )}
+            </label>
+          ),
+        )}
       <button type="submit" className="button" disabled={busy}>
         {busy ? 'Saving…' : 'Save changes'}
       </button>
@@ -452,32 +489,44 @@ function FooterManager() {
     </State>
   );
 }
-function ContentManager({ kind, initiallyCreate = false }) {
+function ContentManager({ kind, initiallyCreate = false, galleryCategory }) {
+  const newItem = galleryCategory ? { category: galleryCategory } : {};
+  const isAchievements = galleryCategory === 'students-achievement';
   const { data, error, reload } = useData('/admin/' + kind),
-    [edit, setEdit] = useState(initiallyCreate ? {} : null);
+    [edit, setEdit] = useState(initiallyCreate ? newItem : null);
   const items =
     kind === 'pages'
       ? data?.filter((item) => ![...managedSlugs, 'footer'].includes(item.slug))
-      : data;
+      : galleryCategory
+        ? data?.filter((item) => (item.category || 'gallery') === galleryCategory)
+        : data;
   return (
     <>
       <div className="section-title">
-        <h2>{kind === 'slots' ? 'Coaching sessions' : kind[0].toUpperCase() + kind.slice(1)}</h2>
-        <button className="button" onClick={() => setEdit({})}>
-          {kind === 'events'
-            ? 'Add new event'
-            : kind === 'gallery'
-              ? 'Add new gallery item'
-              : kind === 'slots'
-                ? 'Add new coaching session'
-                : 'Add new item'}
+        <h2>
+          {isAchievements
+            ? 'Students Achievement'
+            : kind === 'slots'
+              ? 'Coaching sessions'
+              : kind[0].toUpperCase() + kind.slice(1)}
+        </h2>
+        <button className="button" onClick={() => setEdit(newItem)}>
+          {isAchievements
+            ? 'Add student achievement'
+            : kind === 'events'
+              ? 'Add new event'
+              : kind === 'gallery'
+                ? 'Add new gallery item'
+                : kind === 'slots'
+                  ? 'Add new coaching session'
+                  : 'Add new item'}
         </button>
       </div>
       {kind === 'gallery' && (
         <p>
-          Create an album for each event with a title, description and multiple photos. Reorder
-          photos to choose the cover. Select Published on website and save to show the album on the
-          Gallery page.
+          Choose Gallery or Students Achievement. For achievements, add student names, results and
+          event details. Upload multiple photos and reorder photos to choose the cover. Select
+          Published on website and save to show the album on the Gallery page.
         </p>
       )}
       {kind === 'pages' && (
@@ -820,24 +869,35 @@ export default function Admin() {
   const groups = [
     { label: 'Workspace', items: [{ id: 'overview', label: 'Overview' }] },
     {
-      label: 'Content',
+      label: 'Website settings',
       items: [
         { id: 'page:header', label: 'Header & navigation' },
-        { id: 'page:home', label: 'Home' },
-        { id: 'page:about', label: 'About page' },
-        { id: 'page:coaching', label: 'Coaching page' },
-        { id: 'page:events', label: 'Events page' },
-        { id: 'page:contact', label: 'Contact page' },
-        { id: 'page:gallery', label: 'Gallery page' },
-        { id: 'pages', label: 'Other pages' },
-        { id: 'footer', label: 'Footer' },
-        { id: 'gallery', label: 'Gallery' },
+        { id: 'footer', label: 'Footer & links' },
       ],
     },
     {
-      label: 'Operations',
+      label: 'Page content',
       items: [
-        { id: 'events', label: 'Events' },
+        { id: 'page:home', label: 'Home page' },
+        { id: 'page:about', label: 'About page' },
+        { id: 'page:coaching', label: 'Coaching page' },
+        { id: 'page:events', label: 'Events introduction' },
+        { id: 'page:contact', label: 'Contact page' },
+        { id: 'page:gallery', label: 'Gallery introduction' },
+        { id: 'pages', label: 'Additional pages' },
+      ],
+    },
+    {
+      label: 'Photos & achievements',
+      items: [
+        { id: 'gallery', label: 'Photo albums' },
+        { id: 'students-achievement', label: 'Students Achievement' },
+      ],
+    },
+    {
+      label: 'Bookings & membership',
+      items: [
+        { id: 'events', label: 'Manage events' },
         { id: 'slots', label: 'Coaching sessions' },
         { id: 'plans', label: 'Membership plans' },
       ],
@@ -850,6 +910,8 @@ export default function Admin() {
       ],
     },
   ];
+  const activeGroup = groups.find((group) => group.items.some((item) => item.id === tab));
+  const activeItem = activeGroup?.items.find((item) => item.id === tab);
   return (
     <section className="section">
       <Heading eyebrow="GVK ADMINISTRATION" title="Manage your website." />
@@ -861,7 +923,9 @@ export default function Admin() {
               {group.items.map((item) => (
                 <button
                   key={item.id}
+                  type="button"
                   className={tab === item.id ? 'selected' : ''}
+                  aria-current={tab === item.id ? 'page' : undefined}
                   onClick={() => {
                     setCreateKind(null);
                     setTab(item.id);
@@ -874,6 +938,11 @@ export default function Admin() {
           ))}
         </nav>
         <div className="admin-main">
+          <div className="admin-location" aria-live="polite">
+            <span>{activeGroup?.label}</span>
+            <span aria-hidden="true">/</span>
+            <strong>{activeItem?.label}</strong>
+          </div>
           {tab.startsWith('page:') ? (
             <PageContentManager
               key={tab}
@@ -892,7 +961,12 @@ export default function Admin() {
           ) : tab === 'footer' ? (
             <FooterManager />
           ) : (
-            <ContentManager key={tab} kind={tab} initiallyCreate={createKind === tab} />
+            <ContentManager
+              key={tab}
+              kind={tab === 'students-achievement' ? 'gallery' : tab}
+              galleryCategory={['gallery', 'students-achievement'].includes(tab) ? tab : undefined}
+              initiallyCreate={createKind === tab}
+            />
           )}
         </div>
       </div>

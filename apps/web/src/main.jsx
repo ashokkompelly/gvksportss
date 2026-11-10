@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Notifications from './components/Notifications';
@@ -57,6 +58,7 @@ createRoot(document.getElementById('root')).render(
           </Route>
         </Routes>
       </AuthProvider>
+      <Analytics />
     </BrowserRouter>
   </React.StrictMode>,
 );

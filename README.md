@@ -123,4 +123,3 @@ To diagnose the hosting connection directly, run `node test-mongo.js`. It report
 Deploy this project from the repository root so both `apps/web` and the root `api/index.js` function are included. In Vercel Project Settings, set Root Directory to the repository root (leave it empty), not `apps/web`.
 
 The checked-in `vercel.json` installs the npm workspaces with `npm ci --workspaces --include-workspace-root --include=dev`, builds with `npm --prefix apps/web run build`, and serves `apps/web/dist`. Remove stale dashboard command overrides and deploy the commit containing this configuration. Redeploying an older deployment reuses that older commit's files.
-

@@ -19,9 +19,15 @@ export async function migrateTeamAndPages(store) {
           created_at: about.created_at,
         });
       }
-      const migrated = (await store.all('resources', { kind: 'team' })).map(row => JSON.parse(row.data)).sort((a,b) => a.order - b.order);
-      const restored = migrated.map(({ legacyId, order, ...profile }) => ({ ...profile, ...(legacyId === undefined ? {} : { id: legacyId }) }));
-      if (!isDeepStrictEqual(members, restored)) throw new Error('Team migration verification failed.');
+      const migrated = (await store.all('resources', { kind: 'team' }))
+        .map((row) => JSON.parse(row.data))
+        .sort((a, b) => a.order - b.order);
+      const restored = migrated.map(({ legacyId, order, ...profile }) => ({
+        ...profile,
+        ...(legacyId === undefined ? {} : { id: legacyId }),
+      }));
+      if (!isDeepStrictEqual(members, restored))
+        throw new Error('Team migration verification failed.');
       if (page.config?.team) delete page.config.team.members;
       await store.update('resources', { id: about.id }, { data: JSON.stringify(page) });
     }

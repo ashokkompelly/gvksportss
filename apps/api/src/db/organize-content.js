@@ -69,20 +69,18 @@ export async function organizeContent(client, database, sourceName) {
             { $max: { value: Math.max(0, ...rows.map((row) => row.id)) } },
             { upsert: true, session },
           );
-        await db
-          .collection('_control')
-          .updateOne(
-            marker,
-            {
-              $set: {
-                version: 2,
-                legacyCollection: sourceName,
-                migrated_at: new Date().toISOString(),
-                counts,
-              },
+        await db.collection('_control').updateOne(
+          marker,
+          {
+            $set: {
+              version: 2,
+              legacyCollection: sourceName,
+              migrated_at: new Date().toISOString(),
+              counts,
             },
-            { upsert: true, session },
-          );
+          },
+          { upsert: true, session },
+        );
         return { counts, legacyCollection: sourceName };
       },
       { readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, timeoutMS: 60000 },
